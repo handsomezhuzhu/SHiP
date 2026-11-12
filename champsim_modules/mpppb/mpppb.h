@@ -113,6 +113,37 @@ private:
   int pos2_ = 3;
   int pos3_ = 2;
 
+  // ---- author profile (CRC2 config 1: single-core MDPP) ----
+  bool author_ = false;        // MDPP + author training + author feature set
+  bool use_mdpp_ = false;      // tree-based pseudo-LRU base
+  bool direct_index_ = false;  // direct bit extraction + modulo (author code)
+  bool author_train_ = false;  // init weight 1, threshold 128, dead zone
+  bool bypass_duel_ = false;   // set-dueling for the bypass threshold
+  int train_threshold_ = 0;    // dan_threshold: 128 single, 0 multi
+  int theta_ = 0;              // dead-zone upper bound (109 single)
+  int theta2_ = 0;             // dead-zone lower bound (135 single)
+  int promotion_threshold_ = 256;
+  int bypass_dt1_ = 55;
+  int bypass_dt2_ = 1024;
+  int leaders1_ = 32;
+  int leaders2_ = 64;
+  int psel_ = 0;               // set-dueling counter
+  int init_weight_ = 0;        // author code initializes to 1
+  int plv_[3][2] = {{-15, 0}, {35, 12}, {44, 15}};
+  int last_promoted_ = 0;
+  std::uint8_t burst_now_ = 0;
+  std::vector<std::uint16_t> plru_;  // 15 bits per set (MDPP)
+
+  static constexpr int kMdppWays = 16;
+
+  int plru_index(long set, long way) const;
+  void plru_set(long set, long way, int idx);
+  bool plru_would_change(long set, long way, int idx) const;
+  long plru_victim(long set) const;
+  std::int16_t peek_score(long set, std::uint64_t block, bool& found) const;
+  void drop_pending(long set, std::uint64_t block);
+  int bypass_limit(long set) const;
+
   void describe_features();
   std::vector<std::int8_t>& weights(std::size_t cpu, int feature);
   std::uint8_t index_of(const feature& f, const core_view& st, long set, std::uint64_t ip,

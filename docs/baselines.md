@@ -67,6 +67,25 @@
 > Matrix-1 的完整结果见 `docs/results_matrix1.md`。旧版占位阈值
 > `150/100/50/0/0` 已弃用；正式实验使用 c 组 `250/150/75/0/100`。
 
+### 4. MPPPB author profile（单核 MDPP，2026-11-13）
+
+为了和论文单核的 static MDPP 对齐，`mpppb` 增加了一个 profile：
+
+```bash
+MPPPB_PROFILE=author1 bin/champsim_mpppb_mdpp ...
+```
+
+- 底座：MDPP（16 位置，树状 PLRU，`vecmdpp` 提升）；
+- 特征：CRC2 `single_1`（≈Table 1(a)），直接取位 + XOR PC + `% table_size`；
+- 训练：初值 1、`threshold=128`、dead zone `theta=109/theta2=135`；
+- placement：`plv = (-15→0, 35→12, 44→15)`；
+- promotion：`conf <= 82`；
+- bypass：set-dueling `dt1=56/dt2=256`，leader sets 32/64，**真不分配**；
+- 采样器：64 组（论文值；作者代码 80）。
+- 这些是作者 CRC2 提交里的硬编码值，不是论文正文给出的；
+  论文正文只说 τ/π 是搜出来的。来源见 `docs/original_crc2_params.md`。
+- 默认不设 profile 时仍是 4 级 SRRIP 路径，Matrix-1 可复现。
+
 ## 实验矩阵（计划）
 
 | 维度 | 取值 |

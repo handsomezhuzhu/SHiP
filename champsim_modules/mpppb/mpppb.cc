@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <iterator>
 
 #include "champsim.h"
@@ -21,6 +22,8 @@ struct probe_counters {
 };
 
 probe_counters g_probe;
+
+constexpr int kVecMdpp[16] = {0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 0, 1, 0, 0};
 
 void probe_bucket(int score)
 {
@@ -65,6 +68,22 @@ std::uint64_t compress_bits(std::uint64_t value, int width)
   folded = (folded * 0x9dU) & mask;
   return folded;
 }
+
+// Set the tree path that selects leaf `idx` for `way` (16-way MDPP).
+std::uint16_t plru_assign(std::uint16_t P, int way, int idx)
+{
+  std::uint32_t x = static_cast<std::uint32_t>(way) + 15U;
+  for (int i = 0; i < 4; ++i) {
+    const bool odd = (x & 1U) != 0;
+    x = (x - 1U) >> 1U;
+    const bool val = (odd == (((idx >> (3 - i)) & 1) != 0));
+    if (val)
+      P = static_cast<std::uint16_t>(P | (1U << x));
+    else
+      P = static_cast<std::uint16_t>(P & ~(1U << x));
+  }
+  return P;
+}
 } // namespace
 
 mpppb::mpppb(CACHE* cache)
@@ -80,10 +99,7 @@ mpppb::mpppb(CACHE* cache)
     ++set_bits_;
   sampled_sets_ = (static_cast<std::size_t>(sets_) + kSampleStride - 1) / kSampleStride;
 
-  describe_features();
-
-  // The five thresholds are not published. Environment overrides let the
-  // search script drive them without rebuilding.
+  // Profile selection must happen before describe_features().
   auto read_env = [](const char* name, int& slot) {
     if (const char* text = std::getenv(name)) {
       char* end = nullptr;
@@ -92,6 +108,50 @@ mpppb::mpppb(CACHE* cache)
         slot = static_cast<int>(parsed);
     }
   };
+  if (const char* profile = std::getenv("MPPPB_PROFILE"); profile != nullptr && std::strcmp(profile, "author1") == 0) {
+    // CRC2 config 1: single core, 2 MB LLC, no prefetcher, static MDPP.
+    author_ = true;
+    use_mdpp_ = true;
+    direct_index_ = true;
+    author_train_ = true;
+    bypass_duel_ = true;
+    train_threshold_ = 128;
+    theta_ = 109;
+    theta2_ = 135;
+    promotion_threshold_ = 82;
+    bypass_dt1_ = 56;
+    bypass_dt2_ = 256;
+    leaders1_ = 32;
+    leaders2_ = 64;
+    init_weight_ = 1;
+    plv_[0][0] = -15;
+    plv_[0][1] = 0;
+    plv_[1][0] = 35;
+    plv_[1][1] = 12;
+    plv_[2][0] = 44;
+    plv_[2][1] = 15;
+  }
+  if (const char* base = std::getenv("MPPPB_BASE"); base != nullptr && std::strcmp(base, "mdpp") == 0)
+    use_mdpp_ = true;
+  read_env("MPPPB_TRAIN_THRESHOLD", train_threshold_);
+  read_env("MPPPB_THETA", theta_);
+  read_env("MPPPB_THETA2", theta2_);
+  read_env("MPPPB_PROMOTE", promotion_threshold_);
+  read_env("MPPPB_DT1", bypass_dt1_);
+  read_env("MPPPB_DT2", bypass_dt2_);
+  read_env("MPPPB_LEADERS1", leaders1_);
+  read_env("MPPPB_LEADERS2", leaders2_);
+  read_env("MPPPB_INIT_WEIGHT", init_weight_);
+  read_env("MPPPB_PLV0T", plv_[0][0]);
+  read_env("MPPPB_PLV0P", plv_[0][1]);
+  read_env("MPPPB_PLV1T", plv_[1][0]);
+  read_env("MPPPB_PLV1P", plv_[1][1]);
+  read_env("MPPPB_PLV2T", plv_[2][0]);
+  read_env("MPPPB_PLV2P", plv_[2][1]);
+  if (const char* duel = std::getenv("MPPPB_BYPASS_DUEL"); duel != nullptr)
+    bypass_duel_ = std::strcmp(duel, "0") != 0;
+
+  describe_features();
   read_env("MPPPB_TAU_BYPASS", thr_bypass_);
   read_env("MPPPB_TAU_P1", thr_pos1_);
   read_env("MPPPB_TAU_P2", thr_pos2_);
@@ -108,11 +168,12 @@ mpppb::mpppb(CACHE* cache)
     std::fprintf(stderr, "mpppb: warning: thresholds are not monotone (bypass=%d p1=%d p2=%d p3=%d)\n", thr_bypass_,
                  thr_pos1_, thr_pos2_, thr_pos3_);
 
+  plru_.assign(static_cast<std::size_t>(sets_), 0);
   cores_.resize(NUM_CPUS);
   for (auto& core : cores_) {
     core.table.resize(kFeatureCount);
     for (int f = 0; f < kFeatureCount; ++f)
-      core.table[f].assign(plan_[f].entries, 0);
+      core.table[f].assign(plan_[f].entries, static_cast<std::int8_t>(init_weight_));
     core.sampler.assign(sampled_sets_, {});
   }
 }
@@ -131,6 +192,35 @@ mpppb::~mpppb()
 
 void mpppb::describe_features()
 {
+  if (author_) {
+    // CRC2 config 1 feature table (`single_1`, close to Table 1(a)).
+    auto add_a = [this](view kind, int a, int b, int e, int w, bool mix) {
+      int entries = 256;
+      if (kind == view::offset)
+        entries = mix ? 256 : (1 << std::max(0, e - b));
+      else if (kind != view::pc && kind != view::address)
+        entries = mix ? 256 : 2;
+      plan_.push_back(feature{kind, a, b, e, w, mix, 0, static_cast<std::uint16_t>(entries)});
+    };
+    add_a(view::offset, 15, 1, 6, 0, true);
+    add_a(view::pc, 7, 14, 43, 11, false);
+    add_a(view::pc, 16, 3, 11, 16, true);
+    add_a(view::insert, 16, 0, 0, 0, true);
+    add_a(view::offset, 10, 0, 6, 0, true);
+    add_a(view::pc, 10, 1, 53, 10, false);
+    add_a(view::bias, 16, 0, 0, 0, false);
+    add_a(view::insert, 8, 0, 0, 0, true);
+    add_a(view::pc, 17, 6, 20, 0, true);
+    add_a(view::burst, 6, 11, 22, 9, false);
+    add_a(view::lastmiss, 9, 0, 0, 0, false);
+    add_a(view::pc, 17, 6, 20, 0, true);
+    add_a(view::insert, 16, 2, 47, 2, false);
+    add_a(view::insert, 17, 0, 0, 0, true);
+    add_a(view::pc, 16, 8, 16, 5, false);
+    add_a(view::pc, 17, 6, 20, 14, true);
+    return;
+  }
+
   // Table 1(b) of the paper (single-thread set).
   auto add = [this](view kind, int a, int b, int e, int w, bool mix) {
     int width = 1;
@@ -177,6 +267,46 @@ std::vector<std::int8_t>& mpppb::weights(std::size_t cpu, int slot)
 std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, std::uint64_t ip,
                              std::uint64_t addr, std::uint64_t block, bool insert)
 {
+  if (direct_index_) {
+    // Author-code indexing: direct bit extraction (e is exclusive), XOR PC,
+    // then modulo the table size. No XOR folding.
+    std::uint64_t raw = 0;
+    const int width = f.e - f.b;
+    const std::uint64_t mask = (width <= 0) ? 0 : ((width >= 64) ? ~std::uint64_t{0} : ((std::uint64_t{1} << width) - 1));
+    switch (f.kind) {
+    case view::pc: {
+      std::uint64_t chosen = ip;
+      if (f.w > 0) {
+        const auto depth = static_cast<std::uint64_t>(f.w);
+        chosen = (st.stamps >= depth) ? st.pc_ring[(st.stamps - depth) % st.pc_ring.size()] : 0;
+      }
+      raw = (chosen >> f.b) & mask;
+      break;
+    }
+    case view::address:
+      raw = (addr >> f.b) & mask;
+      break;
+    case view::offset:
+      raw = ((addr & 63U) >> f.b) & mask;
+      break;
+    case view::bias:
+      raw = 0;
+      break;
+    case view::burst:
+      raw = burst_now_;
+      break;
+    case view::insert:
+      raw = insert ? 1 : 0;
+      break;
+    case view::lastmiss:
+      raw = miss_last_.at(static_cast<std::size_t>(set)) ? 1 : 0;
+      break;
+    }
+    if (f.mix_pc)
+      raw ^= ip;
+    return static_cast<std::uint8_t>(raw % f.entries);
+  }
+
   std::uint64_t raw = 0;
 
   switch (f.kind) {
@@ -241,6 +371,19 @@ void mpppb::nudge(core_view& st, int slot, std::uint8_t index, int delta)
 
 void mpppb::learn_reuse(core_view& st, const item& old, int position)
 {
+  if (author_train_) {
+    // Author-code perceptron rule: train if wrong, or if inside the dead zone.
+    const bool predicted_dead = old.score >= train_threshold_;
+    const bool correct = !predicted_dead;
+    const bool deadzone = (old.score < 0) ? (old.score > -theta2_) : (old.score < theta_);
+    if (correct && !deadzone)
+      return;
+    for (int f = 0; f < kFeatureCount; ++f)
+      if (position < plan_[static_cast<std::size_t>(f)].a)
+        nudge(st, f, old.key[static_cast<std::size_t>(f)], -1);
+    return;
+  }
+
   // Mistake-driven perceptron: a live block must be predicted live (score < 0).
   // A score of exactly 0 is treated as a miss so that training can bootstrap
   // from the all-zero tables.
@@ -253,6 +396,18 @@ void mpppb::learn_reuse(core_view& st, const item& old, int position)
 
 void mpppb::learn_demote(core_view& st, const item& old, int new_position)
 {
+  if (author_train_) {
+    const bool predicted_dead = old.score >= train_threshold_;
+    const bool correct = predicted_dead;
+    const bool deadzone = (old.score < 0) ? (old.score > -theta2_) : (old.score < theta_);
+    if (correct && !deadzone)
+      return;
+    for (int f = 0; f < kFeatureCount; ++f)
+      if (new_position == plan_[static_cast<std::size_t>(f)].a)
+        nudge(st, f, old.key[static_cast<std::size_t>(f)], +1);
+    return;
+  }
+
   // A block falling past a feature's associativity cutoff is dead for it.
   // Symmetrically, a dead block must be predicted dead (score > 0); 0 counts
   // as a miss.
@@ -316,9 +471,88 @@ std::int16_t mpppb::take_score(long set, std::uint64_t block, bool& found)
   return score;
 }
 
-long mpppb::find_victim(uint32_t, uint64_t, long set, const champsim::cache_block*, champsim::address, champsim::address,
-                        access_type)
+int mpppb::plru_index(long set, long way) const
 {
+  const std::uint16_t P = plru_.at(static_cast<std::size_t>(set));
+  std::uint32_t x = static_cast<std::uint32_t>(way) + 15U;
+  int idx = 0;
+  for (int i = 0; i < 4; ++i) {
+    const bool odd = (x & 1U) != 0;
+    x = (x - 1U) >> 1U;
+    if ((((P >> x) & 1U) != 0) == odd)
+      idx |= 1 << (3 - i);
+  }
+  return idx;
+}
+
+void mpppb::plru_set(long set, long way, int idx)
+{
+  auto& P = plru_.at(static_cast<std::size_t>(set));
+  P = plru_assign(P, static_cast<int>(way), idx);
+}
+
+bool mpppb::plru_would_change(long set, long way, int idx) const
+{
+  const std::uint16_t P = plru_.at(static_cast<std::size_t>(set));
+  return plru_assign(P, static_cast<int>(way), idx) != P;
+}
+
+long mpppb::plru_victim(long set) const
+{
+  const std::uint16_t P = plru_.at(static_cast<std::size_t>(set));
+  std::uint32_t x = 0;
+  int a = 15;
+  while (a != 0) {
+    x = (((P >> x) & 1U) != 0) ? (2U * x + 1U) : (2U * x + 2U);
+    a /= 2;
+  }
+  return static_cast<long>(x) - 15;
+}
+
+std::int16_t mpppb::peek_score(long set, std::uint64_t block, bool& found) const
+{
+  const auto& q = in_flight_.at(static_cast<std::size_t>(set));
+  const auto it = std::find_if(std::begin(q), std::end(q), [block](const pending_hit& p) { return p.block == block; });
+  found = (it != std::end(q));
+  return found ? it->score : 0;
+}
+
+void mpppb::drop_pending(long set, std::uint64_t block)
+{
+  auto& q = in_flight_.at(static_cast<std::size_t>(set));
+  const auto it = std::find_if(std::begin(q), std::end(q), [block](const pending_hit& p) { return p.block == block; });
+  if (it != std::end(q))
+    q.erase(it);
+}
+
+int mpppb::bypass_limit(long set) const
+{
+  if (!bypass_duel_)
+    return thr_bypass_;
+  if (set < leaders1_)
+    return bypass_dt1_;
+  if (set < leaders2_)
+    return bypass_dt2_;
+  return (psel_ >= 0) ? bypass_dt2_ : bypass_dt1_;
+}
+
+long mpppb::find_victim(uint32_t, uint64_t, long set, const champsim::cache_block*, champsim::address,
+                        champsim::address full_addr, access_type type)
+{
+  if (use_mdpp_ && ways_ == kMdppWays) {
+    if (type != access_type::WRITE) {
+      const auto block = full_addr.to<std::uint64_t>() >> 6U;
+      bool found = false;
+      const auto score = peek_score(set, block, found);
+      if (found && score >= bypass_limit(set)) {
+        drop_pending(set, block);
+        ++g_probe.bypassed;
+        return ways_; // skip allocation (true bypass)
+      }
+    }
+    return plru_victim(set);
+  }
+
   const auto base = static_cast<std::size_t>(set) * static_cast<std::size_t>(ways_);
 
   // Bypass approximation: a line that was predicted dead-on-arrival is the
@@ -340,6 +574,30 @@ long mpppb::find_victim(uint32_t, uint64_t, long set, const champsim::cache_bloc
 void mpppb::replacement_cache_fill(uint32_t, long set, long way, champsim::address full_addr, champsim::address,
                                    champsim::address, access_type type)
 {
+  if (use_mdpp_ && ways_ == kMdppWays) {
+    if (way >= ways_)
+      return; // bypass: no allocation
+    const auto block = full_addr.to<std::uint64_t>() >> 6U;
+    bool found = false;
+    const auto score = take_score(set, block, found);
+    ++g_probe.fills;
+    if (found)
+      ++g_probe.matched;
+    else
+      ++g_probe.unmatched;
+    probe_bucket(score);
+    int newidx = 0;
+    if (score >= plv_[2][0])
+      newidx = plv_[2][1];
+    else if (score >= plv_[1][0])
+      newidx = plv_[1][1];
+    else if (score >= plv_[0][0])
+      newidx = plv_[0][1];
+    plru_set(set, way, newidx);
+    (void)type;
+    return;
+  }
+
   const auto raw = full_addr.to<std::uint64_t>();
   const auto block = raw >> 6U;
   const auto slot = static_cast<std::size_t>(set) * static_cast<std::size_t>(ways_) + static_cast<std::size_t>(way);
@@ -392,16 +650,40 @@ void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way
 
   auto& core = cores_.at(triggering_cpu);
   std::array<std::uint8_t, kFeatureCount> key{};
+
+  if (author_ && ways_ == kMdppWays) {
+    burst_now_ = 0;
+    if (!insertion && way < ways_) {
+      const int cur = plru_index(set, way);
+      const int nxt = kVecMdpp[cur];
+      burst_now_ = plru_would_change(set, way, nxt) ? 0 : 1;
+    }
+  }
+
   const std::int16_t score = predict(core, set, pc, raw, block, insertion, key);
 
   if (set % kSampleStride == 0)
     visit_sampler(core, set, partial_tag(block), score, key);
 
   if (insertion) {
+    if (author_ && bypass_duel_) {
+      if (set < leaders1_)
+        psel_ = std::min(1023, psel_ + 1);
+      else if (set < leaders2_)
+        psel_ = std::max(-1023, psel_ - 1);
+    }
     auto& q = in_flight_.at(static_cast<std::size_t>(set));
     if (q.size() >= kPendingCap)
       q.pop_front();
     q.push_back(pending_hit{block, score});
+  } else if (author_ && ways_ == kMdppWays) {
+    if (way < ways_ && score <= promotion_threshold_) {
+      const int cur = plru_index(set, way);
+      plru_set(set, way, kVecMdpp[cur]);
+      ++g_probe.promoted;
+    } else {
+      ++g_probe.kept;
+    }
   } else {
     const auto slot = static_cast<std::size_t>(set) * static_cast<std::size_t>(ways_) + static_cast<std::size_t>(way);
     first_victim_.at(slot) = 0; // a reuse disproves dead-on-arrival
