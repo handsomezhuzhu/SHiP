@@ -7,12 +7,12 @@
 **复现 MPPPB（MICRO 2017）**。原因：CRC-2 是 workshop（会务认定有风险），
 而 MPPPB 是主会论文、同属 SHiP 家族、年份安全（2017）、无需离线训练；
 现有 ChampSim 环境可直接复用。
-SHiP / SHiP++ 转为**对照基线**（模块已实现，正好用来比较）。
+SHiP 作为**对照基线**（ChampSim 自带实现）；SHiP++ 不参与本轮实验。
 
 ## 历史分析（保留）
 
-最初的首选是 SHiP++（CRC-2 @ ISCA 2017），因 workspace 风险改为 MPPPB；
-如果老师确认 workshop 可以，也可以按 SHiP++ 为主、MPPPB 为对照来写。
+最初的首选是 SHiP++（CRC-2 @ ISCA 2017），因 workshop 风险改为 MPPPB；
+后续决定实验只保留 LRU + SHiP + MPPPB，不再实现 SHiP++。
 
 ## 候选对比
 
@@ -66,22 +66,23 @@ CRC-2 是 ISCA 2017 的 co-located workshop，不是 ISCA 主会。
   与"替换/插入策略"主线偏离。
 - **SHiP 原文（MICRO'11）**：超出十年，只能当背景。
 
-## 如果选 SHiP++：8 周计划
+## 如果选 MPPPB：8 周计划
 
 | 周 | 任务 | 产出 |
 |---|---|---|
-| W1 | 确认题目；精读 P0；跑通 5 策略基线 | 题目确认邮件、baseline 表 |
-| W2 | 完成 SHiP++ 实现（消融开关、采样组、预取路径） | `champsim_shipp` 可复现 |
-| W3 | 8 trace × 5 策略（warmup 50M / sim 150M） | `results/champsim_results.csv` |
-| W4 | 5 个 enhancement 的消融 | 消融表 + 图 |
-| W5 | 开 `next_line` 预取器、跑 C2 配置；4 核 C3 | 预取/多核数据 |
-| W6 | 改进实验（SHCT 压缩 / 训练信号 / 自适应采样，选 1–2 个） | 改进前后对比 |
-| W7 | 写 Technical Report（方法、偏差分析、改进） | 初稿 PDF |
+| W1 | 精读 MPPPB + 跑通 LRU/SHiP 基线 | baseline 表 |
+| W2 | MPPPB v0 → v1（特征/训练/采样器修正） | 可复现模块 |
+| W3 | 阈值/位置搜索 + static MDPP 底座 | 调参记录 |
+| W4 | 8 trace × 3 策略（LRU/SHiP/MPPPB） | `results/champsim_results.csv` |
+| W5 | 消融（特征/训练规则）+ 预取/4 核 | 消融表 |
+| W6 | 改进实验（SHCT 压缩 / 特征裁剪 / 训练信号） | 改进前后对比 |
+| W7 | 写 Technical Report | 初稿 PDF |
 | W8 | 补实验、排版、打包提交 | 最终压缩包 |
 
 ## "复现成功"的验收标准
 
-- 五策略趋势正确：SHiP++ ≥ SHiP > SRRIP/LRU 的几何平均 IPC（允许个别 workload 反向）；
-- 相对幅度不要求等于原文 6.2%/2.2%，但要能解释差异（SPEC2006→2017、ChampSim 版本、采样数、trace 长度）；
+- 三策略趋势合理：MPPPB 的几何平均 IPC 高于 SHiP 和 LRU（允许个别 workload 反向）；
+- 相对幅度不要求等于原文 9.0%，但要能解释差异（SPEC2006→2017、MDPP→SRRIP、采样数、trace 长度）；
+- 注意：原文主对比是 Hawkeye（+5.1%）和 Perceptron（+6.3%），SHiP 不在原文实验中；报告需说明；
 - 至少 8 个 workload 的逐项数据 + 几何平均 + 消融；
 - 有 1 个可量化的改进尝试（哪怕收益很小），并说明为什么。

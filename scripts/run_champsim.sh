@@ -8,7 +8,7 @@ mkdir -p "$OUT"
 
 WARMUP=${WARMUP:-50000000}
 SIMINSTR=${SIMINSTR:-150000000}
-POLICIES=${POLICIES:-"lru srrip drrip ship shipp mpppb"}
+POLICIES=${POLICIES:-"lru srrip ship mpppb"}
 PARALLEL=${PARALLEL:-6}
 
 jobs=()

@@ -46,7 +46,7 @@
 
 | 论文 | 作者 | 本地文件 | 说明 |
 |---|---|---|---|
-| SHiP++ | Young, Chou, Jaleel, Qureshi | `shipplusplus_crc17.pdf` | 本文拟复现对象 |
+| SHiP++ | Young, Chou, Jaleel, Qureshi | `shipplusplus_crc17.pdf` | 同族参照，不参与本轮实验 |
 | Less is More: Leveraging Belady's Algorithm with Demand-based Learning | Wang, Zhang, Panda, John | `harmony_crc17.pdf` | Harmony 的 CRC 版本 |
 | Multiperspective Reuse Prediction | Jiménez, Teran | `mpppb_crc17.pdf` | MPPPB 的 CRC 版本 |
 | Cache Replacement Policy Based on Expected Hit Count | Vakil-Ghahani et al. | `expected_hit_count_crc17.pdf` | EHC 策略 |

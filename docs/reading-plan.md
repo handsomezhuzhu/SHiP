@@ -20,7 +20,7 @@ SHiP / SHiP++ 作为对照基线；如果改选其他论文，看文末的"换�
 | 文献 | 篇幅 | 读它要拿到什么 |
 |---|---|---|
 | **MPPPB** `mpppb_micro17.pdf` | 13 p | 16 个特征的参数含义、采样器训练规则、confidence/阈值/位置；能默写预测器结构 |
-| **SHiP++** `shipplusplus_crc17.pdf` | 4 p | 对照基线：5 个 enhancement、SHCT 语义、插入点规则 |
+| **SHiP++**（可选） `shipplusplus_crc17.pdf` | 4 p | 仅作 SHiP 家族背景，不参与实验 |
 | **SHiP** `ship_micro11.pdf` | 12 p | 签名、SHCT、R 位的原始定义；SHiP 与 SRRIP 的分工（只改插入，不改 victim/hit） |
 | **RRIP/DRRIP** `rrip_isca10.pdf` | 12 p | RRPV 状态机、SRRIP/DRRIP、set dueling——所有实验的基线 |
 | **Hawkeye** `belady_isca16.pdf`（+ `hawkeye_crc17.pdf` / slides） | 12 p | 主要对比对象；OPTgen + 采样器 + 二分类器怎么工作；slides 里有 C1–C4 结果 |

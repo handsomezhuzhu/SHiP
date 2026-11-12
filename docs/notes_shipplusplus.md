@@ -1,3 +1,5 @@
+> 注：SHiP++ 已不参与本轮实验（最终选题为 MPPPB）。本文档仅作为 SHiP 家族背景资料保留。
+
 # SHiP++ 精读笔记与复现方案
 
 论文：V. Young, C.-C. Chou, A. Jaleel, M. Qureshi,

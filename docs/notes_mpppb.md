@@ -118,6 +118,11 @@ bwaves 的 LLC 几乎不缺失，两者相同；mcf 上 v0 的 IPC 略好但 mis
 
 ## 8. 下一步（按优先级）
 
+> 实验范围（已确认）：**MPPPB vs SHiP vs LRU**；SHiP++ 不再实现。
+> 论文本身主要对比 LRU / Hawkeye / Perceptron（+ MIN oracle），SHiP 只作同族参照，
+> 报告里需要说明这一差异。
+
+
 1. **阈值/位置搜索**：固定 2 条 trace（mcf、xalancbmk）+ 20 M 指令，
    网格/随机搜索 `τ0..τ4` 与 `π1..π3`，目标是 LLC MPKI；
    可用 ChampSim 的 `--json` 批量跑，或把预测器移植到 `sim/llc_sim` 做快速搜索。
@@ -126,14 +131,14 @@ bwaves 的 LLC 几乎不缺失，两者相同；mcf 上 v0 的 IPC 略好但 mis
 3. **真正的 bypass**：改 ChampSim `cache.cc` 的 fill 路径，或在 replacement 接口上
    增加"skip fill"能力（需要小改核心代码，单独分支）。
 4. **换 Table 1(a) / Table 2**：单核两套特征可做交叉验证；多核用 Table 2。
-5. **完整实验矩阵**：LRU / SRRIP / DRRIP / SHiP / SHiP++ / MPPPB × 8 trace，
+5. **完整实验矩阵**：LRU / SRRIP / SHiP / MPPPB × 8 trace，
    单核 + 4 核，无预取 + `next_line` 预取。
 6. **偏差分析**：SPEC2017 vs 2006、MDPP vs SRRIP、采样组数、trace 长度。
 
 ## 9. 复现验收标准
 
-- MPPPB 的几何平均 IPC **高于 LRU 和 SHiP++**（论文里 9.0% vs 6.3% 的趋势）；
-- 与 Hawkeye（如果实现）/ SHiP++ 的排序合理；
+- MPPPB 的几何平均 IPC **高于 LRU 和 SHiP**；
+- 论文的主对比是 Hawkeye（+5.1%）和 Perceptron（+6.3%）；若时间允许，补 Hawkeye 作为对照更贴近原文；
 - 至少 8 个 workload 的逐项结果 + 几何平均；
 - 阈值/位置搜索有记录（说明不是碰巧调出来的）；
 - 对偏差（底座、workload、bypass 近似）有量化解释。

@@ -32,8 +32,7 @@
   - L1I 32 KB / L1D 32 KB（8/12-way，4/5 cycle）
   - L2 256 KB（1024 sets × 8 way，10 cycle）
   - **LLC 2 MB（2048 sets × 16 way，20 cycle）**，无 prefetcher
-  - LLC 替换策略：`lru` / `srrip` / `drrip` / `ship`，以及自研模块
-    `shipp`（SHiP++）和 `mpppb`（MPPPB，v0）
+  - LLC 替换策略：`lru` / `srrip` / `ship`，以及自研模块 `mpppb`（MPPPB，v0）
 - 编译：`scripts/build_policies.sh` → `env/ChampSim/bin/champsim_{lru,srrip,drrip,ship}`
 - 运行：`scripts/run_champsim.sh`（默认 warmup 50 M、仿真 150 M 指令，6 路并行）
 - 汇总：`scripts/summarize_champsim.py` → `results/champsim_results.csv`（IPC、LLC access/miss/MPKI）
@@ -80,7 +79,7 @@ workload 没有区别。这也说明后续实验必须包含 mcf、xalancbmk、l
 
 ## 5. 已知偏差与后续工作
 
-- **benchmark 代际差异**：SHiP/SHiP++ 原文用 SPEC CPU2006，本文用 SPEC CPU2017；
+- **benchmark 代际差异**：MPPPB/SHiP 原文用 SPEC CPU2006，本文用 SPEC CPU2017；
   策略排序和收益幅度可能不同，报告里需要单独解释。
 - **trace 数量**：目前每 benchmark 1 条，统计噪声较大；最终实验建议每 benchmark 2–3 条。
 - **预取器**：当前关闭预取，无法体现 SHiP 在 prefetch 污染下的问题；若要复现

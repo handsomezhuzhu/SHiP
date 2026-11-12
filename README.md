@@ -3,7 +3,7 @@
 《并行计算机体系结构》课程期末大作业（程序复现与运行方向）。
 最终目标：在 2027-01-14 前完成 **MPPPB（Multiperspective Reuse Prediction, MICRO 2017）**
 的复现 + Benchmark 数据 + Technical Report。
-SHiP / SHiP++ 作为同族对照基线（模块已实现）。
+SHiP 作为同族对照基线（SHiP++ 不参与本轮实验）。
 
 ## 1. 选题定位
 
@@ -25,6 +25,7 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 | SPEC CPU2017 ChampSim trace（8 条） | ✅ 见 `docs/benchmark.md` |
 | 论文选定：MPPPB（MICRO 2017） | ✅ 见 `docs/decision.md` |
 | MPPPB ChampSim 模块 v0（16 特征 / 采样器 / 训练 / 阈值决策） | ✅ 编译 + 冒烟通过，见 `docs/notes_mpppb.md` |
+| 实验基线：LRU + SHiP（SHiP++ 已移除） | ✅ |
 | 阈值/位置搜索（论文未给数值） | 🚧 下一步 |
 | static MDPP 底座 / 真 bypass | ⏳ |
 | 完整 Benchmark + 技术报告 | ⏳ |
@@ -44,7 +45,7 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 │   └── manifest.tsv       # 下载清单
 ├── env/                   # ChampSim 源码与 Python venv（gitignore）
 ├── traces/                # ChampSim trace（gitignore，体积大）
-├── champsim_modules/      # 自研替换策略模块（shipp / mpppb）
+├── champsim_modules/      # 自研替换策略模块（mpppb）
 ├── configs/               # 各替换策略的 ChampSim 配置
 ├── scripts/               # 下载、编译、批量实验脚本
 ├── sim/                   # 自研轻量 trace-driven LLC 模拟器
@@ -67,8 +68,7 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 # 2. ChampSim（会 clone 到 env/ChampSim 并编译 vcpkg 依赖，约 10 分钟）
 ./scripts/build_champsim.sh
 
-# 2b. 编译自研策略（SHiP++ / MPPPB）
-./scripts/build_shipp.sh
+# 2b. 编译自研策略（MPPPB）
 ./scripts/build_mpppb.sh
 
 # 3. Benchmark trace（约 3.4 GB）
