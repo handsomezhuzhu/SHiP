@@ -61,22 +61,37 @@ def main():
     script = shell_script()
     tmp = ROOT / "results" / "raw" / "mdpp_search.sh"
     tmp.parent.mkdir(parents=True, exist_ok=True)
-    tmp.write_text(script)
+    tmp.write_bytes(script.encode("utf-8"))
     sb.fs.upload_file(str(tmp), "search.sh")
     print("launch", sb.process.exec("cd $HOME && nohup bash $HOME/search.sh > $HOME/search.log 2>&1 & echo LAUNCHED", timeout=60).result.strip(), flush=True)
 
     deadline = time.time() + 60 * 60
+    no_progress = 0
     while time.time() < deadline:
         time.sleep(90)
         st = sb.process.exec("cd $HOME/ChampSim && echo jsons=$(find search -name '*.json' | wc -l) procs=$(ps -eo comm | grep -c '^champsim' || true); tail -1 $HOME/search.log", timeout=60).result.strip()
         print(st, flush=True)
-        if "jsons=" in st and int(st.split("jsons=")[1].split()[0]) >= len(CONFIGS) * 2:
+        if "jsons=" not in st:
+            continue
+        done_n = int(st.split("jsons=")[1].split()[0])
+        procs = int(st.split("procs=")[1].split()[0])
+        if done_n >= len(CONFIGS) * 2 or "SEARCH_DONE" in st:
             break
-        if "SEARCH_DONE" in st:
-            break
+        if done_n == 0 and procs == 0:
+            no_progress += 1
+            if no_progress >= 2:
+                print("search did not start; log:", flush=True)
+                print(sb.process.exec("cat $HOME/search.log", timeout=30).result, flush=True)
+                return
+        else:
+            no_progress = 0
 
     resp = sb.process.exec("cd $HOME/ChampSim && tar czf - search | base64 -w0", timeout=300)
-    raw = base64.b64decode(resp.result.strip())
+    data = resp.result.strip()
+    if not data:
+        print("empty search archive", flush=True)
+        return
+    raw = base64.b64decode(data)
     OUT.mkdir(parents=True, exist_ok=True)
     with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tf:
         tf.extractall(OUT)
