@@ -57,20 +57,48 @@ def upload_common(sb):
     sb.fs.upload_file(str(ROOT / "scripts/daytona_run_mdpp.sh"), "run.sh")
 
 
+def remote_size(sb, path):
+    out = sb.process.exec(f"stat -c %s $HOME/{path} 2>/dev/null || echo 0", timeout=30).result
+    try:
+        return int(out.strip().splitlines()[-1])
+    except Exception:
+        return 0
+
+
+def upload_trace(sb, tr):
+    local = ROOT / "traces" / f"{tr}.champsimtrace.xz"
+    remote = f"ChampSim/traces/{tr}.champsimtrace.xz"
+    want = local.stat().st_size
+    for attempt in range(5):
+        if remote_size(sb, remote) == want:
+            print(f"  {tr}: already uploaded", flush=True)
+            return
+        try:
+            print(f"  {tr}: upload attempt {attempt + 1}", flush=True)
+            sb.fs.upload_file(str(local), remote, timeout=1800)
+            if remote_size(sb, remote) == want:
+                print(f"  {tr}: ok", flush=True)
+                return
+        except Exception as exc:  # noqa: BLE001
+            print(f"  {tr}: {type(exc).__name__}: {str(exc)[:160]}", flush=True)
+        time.sleep(15)
+    raise RuntimeError(f"upload failed: {tr}")
+
+
 def setup_one(pairs, idx):
     name, traces = ASSIGN[idx]
     client = client_for(pairs, idx)
     sb = client.get(name)
     print(f"[{idx}] {name} upload", flush=True)
     upload_common(sb)
-    print(f"[{idx}] setup start", flush=True)
-    resp = sb.process.exec("bash $HOME/setup.sh", timeout=1800)
-    print(f"[{idx}] setup rc={getattr(resp, 'exit_code', '?')}", flush=True)
-    print(getattr(resp, "result", "")[-1200:], flush=True)
-    for tr in traces:
-        print(f"[{idx}] upload {tr}", flush=True)
-        sb.fs.upload_file(str(ROOT / "traces" / f"{tr}.champsimtrace.xz"),
-                          f"ChampSim/traces/{tr}.champsimtrace.xz", timeout=1800)
+    check = sb.process.exec("test -x $HOME/ChampSim/bin/champsim_mpppb_mdpp && echo YES || echo NO", timeout=30).result
+    if "YES" not in check:
+        print(f"[{idx}] setup start", flush=True)
+        resp = sb.process.exec("bash $HOME/setup.sh", timeout=1800)
+        print(f"[{idx}] setup rc={getattr(resp, 'exit_code', '?')}", flush=True)
+        print(getattr(resp, "result", "")[-1000:], flush=True)
+    else:
+        print(f"[{idx}] setup already done", flush=True)
     return idx, sb
 
 
@@ -82,7 +110,8 @@ def launch(pairs, idx, sb):
 
 
 def progress(sb):
-    cmd = "cd $HOME/ChampSim && echo jsons=$(ls results/*.json 2>/dev/null | wc -l) procs=$(pgrep -c champsim 2>/dev/null || echo 0)"
+    cmd = ("cd $HOME/ChampSim && echo jsons=$(ls results/*.json 2>/dev/null | wc -l) "
+           "procs=$(ps -eo comm | grep -c '^champsim' || true)")
     return sb.process.exec(cmd, timeout=60).result.strip()
 
 
@@ -104,6 +133,10 @@ def main():
         for fut in futures:
             idx, sb = fut.result()
             sandboxes[idx] = sb
+    for idx, sb in sandboxes.items():
+        print(f"[{idx}] trace uploads", flush=True)
+        for tr in ASSIGN[idx][1]:
+            upload_trace(sb, tr)
     for idx, sb in sandboxes.items():
         launch(pairs, idx, sb)
 
