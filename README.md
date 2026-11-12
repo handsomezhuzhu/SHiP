@@ -1,7 +1,9 @@
-# SHiP 方向论文复现 — 环境与 Benchmark 准备
+# SHiP 方向论文复现 — MPPPB（MICRO 2017）
 
-《并行计算机体系结构》课程期末大作业（程序复现与运行方向）的前期准备工作。
-最终目标：在 2027-01-14 前完成一篇 SHiP 方向论文的复现 + Benchmark 数据 + Technical Report。
+《并行计算机体系结构》课程期末大作业（程序复现与运行方向）。
+最终目标：在 2027-01-14 前完成 **MPPPB（Multiperspective Reuse Prediction, MICRO 2017）**
+的复现 + Benchmark 数据 + Technical Report。
+SHiP / SHiP++ 作为同族对照基线（模块已实现）。
 
 ## 1. 选题定位
 
@@ -18,12 +20,13 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 
 | 项目 | 状态 |
 |---|---|
-| 收集 SHiP 系论文（SHiP / SHiP++ / Hawkeye / Glider / Mockingjay / RLR / CARE 等） | ✅ 13 篇 PDF 已下载，见 `docs/papers.md` |
+| 收集 SHiP 系论文（26 篇，含 MPPPB / Hawkeye / Glider / SHiP++ 等） | ✅ 见 `docs/papers.md` |
 | ChampSim 编译环境（含 vcpkg 依赖） | ✅ 已编译通过 |
 | SPEC CPU2017 ChampSim trace（8 条） | ✅ 见 `docs/benchmark.md` |
-| 自研轻量 trace-driven LLC 模拟器（快速验证替换策略） | 🚧 进行中 |
-| 论文选定 | ⏳ 待定 |
-| 复现实现 + 调参 | ⏳ |
+| 论文选定：MPPPB（MICRO 2017） | ✅ 见 `docs/decision.md` |
+| MPPPB ChampSim 模块 v0（16 特征 / 采样器 / 训练 / 阈值决策） | ✅ 编译 + 冒烟通过，见 `docs/notes_mpppb.md` |
+| 阈值/位置搜索（论文未给数值） | 🚧 下一步 |
+| static MDPP 底座 / 真 bypass | ⏳ |
 | 完整 Benchmark + 技术报告 | ⏳ |
 
 ## 3. 目录结构
@@ -33,11 +36,15 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 ├── docs/                  # 文献调研、选题对比、实验记录
 │   ├── papers.md          # 已收集论文清单（含来源链接）
 │   ├── candidates.md      # 各候选论文的复现难度/依赖/风险对比
+│   ├── decision.md        # 最终选题与决策记录
+│   ├── notes_mpppb.md     # MPPPB 精读笔记与复现方案
+│   ├── reading-plan.md    # 论文主题分类与阅读优先级
 │   └── benchmark.md       # trace 清单、仿真参数、初步结果
 ├── papers/                # 论文 PDF（gitignore，可重新下载）
 │   └── manifest.tsv       # 下载清单
 ├── env/                   # ChampSim 源码与 Python venv（gitignore）
 ├── traces/                # ChampSim trace（gitignore，体积大）
+├── champsim_modules/      # 自研替换策略模块（shipp / mpppb）
 ├── configs/               # 各替换策略的 ChampSim 配置
 ├── scripts/               # 下载、编译、批量实验脚本
 ├── sim/                   # 自研轻量 trace-driven LLC 模拟器
@@ -59,6 +66,10 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 
 # 2. ChampSim（会 clone 到 env/ChampSim 并编译 vcpkg 依赖，约 10 分钟）
 ./scripts/build_champsim.sh
+
+# 2b. 编译自研策略（SHiP++ / MPPPB）
+./scripts/build_shipp.sh
+./scripts/build_mpppb.sh
 
 # 3. Benchmark trace（约 3.4 GB）
 ./scripts/get_traces.sh

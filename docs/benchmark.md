@@ -32,7 +32,8 @@
   - L1I 32 KB / L1D 32 KB（8/12-way，4/5 cycle）
   - L2 256 KB（1024 sets × 8 way，10 cycle）
   - **LLC 2 MB（2048 sets × 16 way，20 cycle）**，无 prefetcher
-  - LLC 替换策略：`lru` / `srrip` / `drrip` / `ship`
+  - LLC 替换策略：`lru` / `srrip` / `drrip` / `ship`，以及自研模块
+    `shipp`（SHiP++）和 `mpppb`（MPPPB，v0）
 - 编译：`scripts/build_policies.sh` → `env/ChampSim/bin/champsim_{lru,srrip,drrip,ship}`
 - 运行：`scripts/run_champsim.sh`（默认 warmup 50 M、仿真 150 M 指令，6 路并行）
 - 汇总：`scripts/summarize_champsim.py` → `results/champsim_results.csv`（IPC、LLC access/miss/MPKI）
@@ -66,6 +67,16 @@ workload 没有区别。这也说明后续实验必须包含 mcf、xalancbmk、l
 否则策略差异会被淹没。
 
 > ChampSim 的 4 策略 × 8 trace 矩阵正在后台运行，结果会写入 `results/champsim_results.csv`。
+
+### MPPPB v0 冒烟（warmup 2 M / sim 5 M）
+
+| trace | LRU IPC | MPPPB(v0) IPC | LRU LLC miss | MPPPB LLC miss |
+|---|---|---|---|---|
+| 410.bwaves | 2.9545 | 2.9545 | 526 | 526 |
+| 429.mcf | 0.4283 | 0.4317 | 93 994 | 97 011 |
+
+阈值未调、底座先用 SRRIP，所以这组数据只验证环境可用，不作为实验结果。
+详见 `docs/notes_mpppb.md`。
 
 ## 5. 已知偏差与后续工作
 

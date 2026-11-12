@@ -2,10 +2,17 @@
 
 日期：2026-11-12；截止：2027-01-14。
 
-## 结论
+## 最终决定（2026-11-12）
 
-**首选复现 SHiP++（CRC-2 @ ISCA 2017）**；如果老师明确不认 workshop 论文，
-换 **MPPPB（MICRO 2017）**；不建议 Glider / RLR / CARE。
+**复现 MPPPB（MICRO 2017）**。原因：CRC-2 是 workshop（会务认定有风险），
+而 MPPPB 是主会论文、同属 SHiP 家族、年份安全（2017）、无需离线训练；
+现有 ChampSim 环境可直接复用。
+SHiP / SHiP++ 转为**对照基线**（模块已实现，正好用来比较）。
+
+## 历史分析（保留）
+
+最初的首选是 SHiP++（CRC-2 @ ISCA 2017），因 workspace 风险改为 MPPPB；
+如果老师确认 workshop 可以，也可以按 SHiP++ 为主、MPPPB 为对照来写。
 
 ## 候选对比
 

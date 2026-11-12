@@ -1,7 +1,7 @@
 # 已有论文的主题与阅读优先级
 
-前提：按目前推荐的复现目标 **SHiP++（CRC-2 @ ISCA 2017）** 排序。
-如果最后改选 Hawkeye / Glider / Mockingjay / RLR，看文末的"换题调整"。
+前提：最终复现目标是 **MPPPB（MICRO 2017）**。
+SHiP / SHiP++ 作为对照基线；如果改选其他论文，看文末的"换题调整"。
 
 ## 一、主题分类
 
@@ -19,7 +19,8 @@
 
 | 文献 | 篇幅 | 读它要拿到什么 |
 |---|---|---|
-| **SHiP++** `shipplusplus_crc17.pdf` | 4 p | 5 个 enhancement 的精确定义、SHCT 语义、插入点规则、开销表；能默写伪代码 |
+| **MPPPB** `mpppb_micro17.pdf` | 13 p | 16 个特征的参数含义、采样器训练规则、confidence/阈值/位置；能默写预测器结构 |
+| **SHiP++** `shipplusplus_crc17.pdf` | 4 p | 对照基线：5 个 enhancement、SHCT 语义、插入点规则 |
 | **SHiP** `ship_micro11.pdf` | 12 p | 签名、SHCT、R 位的原始定义；SHiP 与 SRRIP 的分工（只改插入，不改 victim/hit） |
 | **RRIP/DRRIP** `rrip_isca10.pdf` | 12 p | RRPV 状态机、SRRIP/DRRIP、set dueling——所有实验的基线 |
 | **Hawkeye** `belady_isca16.pdf`（+ `hawkeye_crc17.pdf` / slides） | 12 p | 主要对比对象；OPTgen + 采样器 + 二分类器怎么工作；slides 里有 C1–C4 结果 |
@@ -54,12 +55,12 @@
 
 ## 三、建议阅读顺序（约 7 天，每天 2–4 小时）
 
-1. **Day 1**：SHiP++（读 3 遍：先看摘要/图，再抠 5 个 enhancement，最后对着伪代码推演）
-2. **Day 2**：SHiP（重点 §3–§5 机制）+ RRIP（重点 RRPV 状态机与 DRRIP）
-3. **Day 3**：Hawkeye（CRC 4 页）+ Belady'16（OPT 学习框架），配合 slides 看结果
-4. **Day 4**：DIP + SDBP（把"插入策略"和"dead block"两条线分清）
-5. **Day 5**：PACMan + Harmony（预取感知；决定要不要开 prefetcher 实验）
-6. **Day 6**：Glider + Mockingjay + RLR（只求能各用 3 句话说清区别）
+1. **Day 1**：MPPPB（读 3 遍：先看 Figure 2/Table 1，再抠 16 个特征和训练规则，最后对照 v0 代码）
+2. **Day 2**：RRIP（RRPV 状态机）+ SDBP（采样器与 dead block 训练）+ Perceptron'16（前序）
+3. **Day 3**：SHiP + SHiP++（对照基线，重点看与 MPPPB 的差异）
+4. **Day 4**：Hawkeye + Belady'16（OPT 学习框架，另一个主要对照）
+5. **Day 5**：DIP + PACMan + Harmony（set dueling / 预取感知，决定实验配置）
+6. **Day 6**：Glider + Mockingjay + RLR（各用 3 句话说清区别）
 7. **Day 7**：CacheFit + IISWC'20 + ChampSim（开销分析、评测方法、工具细节）
 
 > 只做复现 + 报告的话，P0 + P1 的 13 篇足够；P2 是加分项，不要平均用力。
