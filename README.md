@@ -28,7 +28,9 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 | 实验基线：LRU + SHiP-PC + MPPPB（SHiP++ 已移除） | ✅ 配置见 `docs/baselines.md` |
 | 阈值/位置搜索（论文未给数值） | ✅ c 组 `250/150/75/0/100`，π=3/3/2 |
 | **Matrix-1：8 trace × 3 策略，50 M + 150 M** | ✅ MPPPB **+3.76% IPC / −5.02% MPKI**；SHiP +4.30% IPC，见 `docs/results_matrix1.md` |
-| static MDPP 底座 / 真 bypass / Hawkeye 对照 | 🚧 下一步 |
+| **单核 MDPP（CRC2 config1，Daytona）** | ✅ MPPPB **+4.44% IPC / −7.42% MPKI**；略高于 SHiP（+0.13%），见 `docs/results_mdpp_author1.md` |
+| τ/π 参数搜索（MCX+xalan 5 M+5 M） | 🚧 进行中，见 `docs/mdpp_plan.md` |
+| static MDPP 底座 / 真 bypass | ✅ 已实现；多核 Table 2 待做 |
 | 技术报告 | 🚧 |
 
 ## 3. 目录结构
