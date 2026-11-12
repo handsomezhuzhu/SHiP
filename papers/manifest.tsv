@@ -1,0 +1,16 @@
+file	title	venue	year	url
+ship_micro11.pdf	SHiP: Signature-based Hit Predictor for High Performance Caching	MICRO	2011	https://mrmgroup.cs.princeton.edu/papers/MICRO11_SHiP_Wu_Final.pdf
+perceptron_micro16.pdf	Perceptron Learning for Reuse Prediction	MICRO	2016	https://people.engr.tamu.edu/djimenez/pdfs/micro2016-perceptron.pdf
+mpppb_micro17.pdf	Multiperspective Reuse Prediction	MICRO	2017	https://people.engr.tamu.edu/djimenez/pdfs/p436-jimenez.pdf
+hawkeye_crc17.pdf	Hawkeye: Leveraging Belady's Algorithm for Improved Cache Replacement (CRC-2 version)	CRC-2 @ ISCA	2017	https://www.cs.utexas.edu/~lin/papers/crc17.pdf
+glider_micro19.pdf	Applying Deep Learning to the Cache Replacement Problem	MICRO	2019	https://www.cs.utexas.edu/~lin/papers/micro19c.pdf
+mockingjay_hpca22.pdf	Effective Mimicry of Belady's MIN Policy	HPCA	2022	https://www.cs.utexas.edu/~lin/papers/hpca22.pdf
+rlr_hpca21.pdf	Designing a Cost-Effective Cache Replacement Policy using Machine Learning	HPCA	2021	https://ece.umn.edu/users/jsartori/papers/hpca21.pdf
+care_2023.pdf	CARE: A Concurrency-Aware Enhanced Lightweight Cache Management Framework	HPCA	2023	https://grc.iit.edu/papers/2023/lu-2023-care-bc99.pdf
+cachefit_arxiv26.pdf	CacheFit: The Rising Cost of Cache Replacement and Constraint-Driven Redesign of LLC Replacement Policies	arXiv	2026	https://arxiv.org/pdf/2610.10579
+belady_isca16.pdf	Back to the Future: Leveraging Belady's Algorithm for Improved Cache Replacement	ISCA	2016	https://www.cs.utexas.edu/~lin/papers/isca16.pdf
+harmony_isca18.pdf	Rethinking Belady's Algorithm to Accommodate Prefetching	ISCA	2018	https://www.cs.utexas.edu/~lin/papers/isca18.pdf
+llc_characterization_iiswc20.pdf	Characterizing the Impact of Last-Level Cache Replacement Policies on Big-Data Workloads	IISWC	2020	https://people.engr.tamu.edu/djimenez/pdfs/IISWC2020.pdf
+mdpp_hpca16.pdf	Minimal Disturbance Placement and Promotion	HPCA	2016	https://people.engr.tamu.edu/djimenez/pdfs/hpca2016-mdpp.pdf
+belady_expected_hit_count_arxiv18.pdf	Making Belady-Inspired Replacement Policies More Effective Using Expected Hit Count	arXiv	2018	https://arxiv.org/pdf/1808.05024
+parrot_icml20.pdf	An Imitation Learning Approach for Cache Replacement	ICML	2020	https://arxiv.org/pdf/2006.16239

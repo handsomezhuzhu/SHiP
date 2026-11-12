@@ -1,0 +1,95 @@
+# SHiP 方向论文复现 — 环境与 Benchmark 准备
+
+《并行计算机体系结构》课程期末大作业（程序复现与运行方向）的前期准备工作。
+最终目标：在 2027-01-14 前完成一篇 SHiP 方向论文的复现 + Benchmark 数据 + Technical Report。
+
+## 1. 选题定位
+
+**SHiP = Signature-based Hit Predictor**，Wu, Jaleel, Martonosi, Steely, Emer，MICRO 2011。
+核心思想：用 load PC（或 PC+offset、指令序列）作为签名，用一个 Signature History Counter
+Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插入行的 RRPV，从而把
+"不会再被用到"的流式数据插到更易被替换的位置。SHiP 本身不改变 SRRIP 的命中提升和
+受害者选择逻辑，属于"插入策略"层面的工作。
+
+> 注意：作业要求复现**近十年**（2016 以后）的论文，SHiP 原文（2011）不在范围内。
+> 因此实际复现对象应从 SHiP 的后续工作中选择，见 `docs/candidates.md`。
+
+## 2. 当前进度
+
+| 项目 | 状态 |
+|---|---|
+| 收集 SHiP 系论文（SHiP / SHiP++ / Hawkeye / Glider / Mockingjay / RLR / CARE 等） | ✅ 13 篇 PDF 已下载，见 `docs/papers.md` |
+| ChampSim 编译环境（含 vcpkg 依赖） | ✅ 已编译通过 |
+| SPEC CPU2017 ChampSim trace（8 条） | ✅ 见 `docs/benchmark.md` |
+| 自研轻量 trace-driven LLC 模拟器（快速验证替换策略） | 🚧 进行中 |
+| 论文选定 | ⏳ 待定 |
+| 复现实现 + 调参 | ⏳ |
+| 完整 Benchmark + 技术报告 | ⏳ |
+
+## 3. 目录结构
+
+```
+.
+├── docs/                  # 文献调研、选题对比、实验记录
+│   ├── papers.md          # 已收集论文清单（含来源链接）
+│   ├── candidates.md      # 各候选论文的复现难度/依赖/风险对比
+│   └── benchmark.md       # trace 清单、仿真参数、初步结果
+├── papers/                # 论文 PDF（gitignore，可重新下载）
+│   └── manifest.tsv       # 下载清单
+├── env/                   # ChampSim 源码与 Python venv（gitignore）
+├── traces/                # ChampSim trace（gitignore，体积大）
+├── configs/               # 各替换策略的 ChampSim 配置
+├── scripts/               # 下载、编译、批量实验脚本
+├── sim/                   # 自研轻量 trace-driven LLC 模拟器
+└── results/               # 实验输出（csv/图）
+```
+
+## 4. 环境
+
+- CPU: 24 核，内存 61 GB，磁盘可用 ~160 GB
+- OS: Linux (x86-64)，g++ 16.2.1
+- cmake 由 `env/venv` 提供（系统未装），vcpkg 依赖已编译进 `env/ChampSim/vcpkg_installed`
+- ChampSim: `develop` 分支，commit `410cee62d9c429c043ea611325ce00e6c303be2a` (2026-09-04)
+
+### 从零重建
+
+```bash
+# 1. 论文（能公开下载的部分；其余见 docs/papers.md 的"待获取"列）
+./scripts/fetch_papers.sh
+
+# 2. ChampSim（会 clone 到 env/ChampSim 并编译 vcpkg 依赖，约 10 分钟）
+./scripts/build_champsim.sh
+
+# 3. Benchmark trace（约 3.4 GB）
+./scripts/get_traces.sh
+```
+
+## 5. ChampSim 快速运行
+
+```bash
+cd env/ChampSim
+./bin/champsim \
+  --warmup-instructions 200000000 \
+  --simulation-instructions 500000000 \
+  ../../traces/410.bwaves-945B.champsimtrace.xz
+```
+
+ChampSim 自带 5 种替换策略：`lru`、`srrip`、`drrip`、`random`、`ship`
+（`replacement/ship` 即 SHiP-PC 的参考实现，可直接作为复现基线/对照）。
+
+批量跑策略 × trace 的脚本见 `scripts/run_matrix.sh`（🚧 待补）。
+
+## 6. 参考文献
+
+见 `docs/papers.md`。核心脉络：
+
+```
+SHiP (MICRO'11)
+ ├─ SHiP++ (CRC-2 @ ISCA'17)        改进 SHCT 训练与预测粒度
+ ├─ Perceptron Reuse Prediction (MICRO'16)
+ │   └─ MPPPB (MICRO'17)            多视角感知机
+ ├─ Hawkeye (ISCA'17)               用 Belady 最优解做在线监督学习
+ │   ├─ Glider (MICRO'19)           SVM + 离线 LSTM 特征
+ │   └─ Mockingjay (HPCA'22)        多分类复用距离预测
+ └─ RLR (HPCA'21)                   低成本、无 PC 的替代方案
+```
