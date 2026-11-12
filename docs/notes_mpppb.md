@@ -99,22 +99,21 @@ pc(7,14,43,11,0)     pc(8,1,61,11,0)
 5. **PC 历史**：v0 在 LLC 访问上更新历史；论文是"每个 memory access"更新，
    在 trace 里两者几乎等价，但严格说不同。
 
-## 7. 当前 v0 状态
+## 7. 当前 v1 状态（2026-11-12）
 
-- 源码：`champsim_modules/mpppb/{mpppb.h,mpppb.cc}`
+- 源码：`champsim_modules/mpppb/{mpppb.h,mpppb.cc}`（v1，重写）
+- 修复：训练自举（`>=`/`<=`）、放置方向、X 特征、PC 历史、partial tag、
+  采样器逐出训练、bypass 清除、pending 队列、MRU/burst 等 13 项；
+  详见 `docs/review_mpppb_code.md`。
 - 配置：`configs/champsim_mpppb.json`；编译：`scripts/build_mpppb.sh`
-- 二进制：`env/ChampSim/bin/champsim_mpppb`（编译通过）
-- 冒烟测试（warmup 2 M / sim 5 M）：
-
-| trace | 策略 | IPC | LLC miss |
-|---|---|---|---|
-| 410.bwaves | LRU | 2.9545 | 526 |
-| 410.bwaves | MPPPB(v0) | 2.9545 | 526 |
-| 429.mcf | LRU | 0.4283 | 93 994 |
-| 429.mcf | MPPPB(v0) | 0.4317 | 97 011 |
-
-bwaves 的 LLC 几乎不缺失，两者相同；mcf 上 v0 的 IPC 略好但 miss 更多，
-符合"阈值未调 + SRRIP 底座"的预期。**这组数字只用于验证环境，不是实验结果。**
+- 阈值/位置（Matrix-1）：`τ0..τ4 = 250/150/75/0/100`，`π=3/3/2`；
+  可用 `MPPPB_TAU_*`、`MPPPB_POS1..3` 覆盖。
+- Matrix-1（8 trace，50 M+150 M，instabox）：
+  - MPPPB **+3.76% IPC / −5.02% MPKI**（相对 LRU）；
+  - SHiP-PC +4.30% IPC / −3.69% MPKI；
+  - 逐 trace 表与偏差分析：`docs/results_matrix1.md`。
+- 已知偏差：SRRIP 底座（论文单核 MDPP）、bypass 近似、τ/π 短窗口调优、
+  LLC 访问级 PC 历史、SPEC2017 vs 2006。
 
 ## 8. 下一步（按优先级）
 

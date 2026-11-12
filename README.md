@@ -24,11 +24,12 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 | ChampSim 编译环境（含 vcpkg 依赖） | ✅ 已编译通过 |
 | SPEC CPU2017 ChampSim trace（8 条） | ✅ 见 `docs/benchmark.md` |
 | 论文选定：MPPPB（MICRO 2017） | ✅ 见 `docs/decision.md` |
-| MPPPB ChampSim 模块 v0（16 特征 / 采样器 / 训练 / 阈值决策） | ✅ 编译 + 冒烟通过，见 `docs/notes_mpppb.md` |
+| MPPPB ChampSim 模块 v1（重写：特征索引/训练/放置/bypass 修复） | ✅ 见 `docs/review_mpppb_code.md` |
 | 实验基线：LRU + SHiP-PC + MPPPB（SHiP++ 已移除） | ✅ 配置见 `docs/baselines.md` |
-| 阈值/位置搜索（论文未给数值） | 🚧 下一步 |
-| static MDPP 底座 / 真 bypass | ⏳ |
-| 完整 Benchmark + 技术报告 | ⏳ |
+| 阈值/位置搜索（论文未给数值） | ✅ c 组 `250/150/75/0/100`，π=3/3/2 |
+| **Matrix-1：8 trace × 3 策略，50 M + 150 M** | ✅ MPPPB **+3.76% IPC / −5.02% MPKI**；SHiP +4.30% IPC，见 `docs/results_matrix1.md` |
+| static MDPP 底座 / 真 bypass / Hawkeye 对照 | 🚧 下一步 |
+| 技术报告 | 🚧 |
 
 ## 3. 目录结构
 

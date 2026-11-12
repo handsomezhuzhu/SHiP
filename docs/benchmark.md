@@ -66,9 +66,29 @@
 workload 没有区别。这也说明后续实验必须包含 mcf、xalancbmk、lbm 等高 MPKI 的 trace，
 否则策略差异会被淹没。
 
-> ChampSim 的 4 策略 × 8 trace 矩阵正在后台运行，结果会写入 `results/champsim_results.csv`。
+> ChampSim 的 4 策略 × 8 trace 矩阵（旧版）已被 2026-11-12 的
+> **Matrix-1** 取代，见下一节。
 
-### MPPPB v0 冒烟（warmup 2 M / sim 5 M）
+### Matrix-1（2026-11-12，instabox，正式结果）
+
+- 8 trace × LRU / SHiP-PC / MPPPB，50 M warmup + 150 M 测量；
+- 5 台 instabox `ci`（4 vCPU / 8 GiB）并行，墙钟 **41 min 27 s**；
+- 几何平均：MPPPB **+3.76% IPC / −5.02% MPKI**（相对 LRU），
+  SHiP-PC +4.30% IPC / −3.69% MPKI；
+- 逐 trace 表、实际耗时、偏差分析见 **`docs/results_matrix1.md`**；
+- 原始 JSON：`results/raw/matrix1/<policy>/<trace>.json`；
+- 汇总：`results/matrix1_results.csv`、`results/matrix1_comparison.md`。
+
+关键 workload：
+
+| trace | MPPPB/LRU IPC | SHiP/LRU IPC | MPPPB MPKI | SHiP MPKI |
+|---|---|---|---|---|
+| 450.soplex | 1.1266 | 1.1443 | 19.77 | 20.06 |
+| 483.xalancbmk | 1.1491 | 1.1886 | 22.96 | 21.95 |
+| 470.lbm | 1.0081 | 0.9966 | 28.96 | 33.99 |
+| 429.mcf | 1.0157 | 1.0153 | 29.58 | 30.80 |
+
+### MPPPB v0 冒烟（历史记录，warmup 2 M / sim 5 M）
 
 | trace | LRU IPC | MPPPB(v0) IPC | LRU LLC miss | MPPPB LLC miss |
 |---|---|---|---|---|
