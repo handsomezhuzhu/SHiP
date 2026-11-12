@@ -118,7 +118,8 @@ bwaves 的 LLC 几乎不缺失，两者相同；mcf 上 v0 的 IPC 略好但 mis
 
 ## 8. 下一步（按优先级）
 
-> 实验范围（已确认）：**MPPPB vs SHiP vs LRU**；SHiP++ 不再实现。
+> 实验范围（已确认）：**MPPPB vs SHiP-PC vs LRU**；SHiP++ 不再实现。
+> SHiP-PC 用 ChampSim 自带的 `replacement/ship`（PC 签名），配置见 `docs/baselines.md`。
 > 论文本身主要对比 LRU / Hawkeye / Perceptron（+ MIN oracle），SHiP 只作同族参照，
 > 报告里需要说明这一差异。
 

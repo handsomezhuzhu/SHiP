@@ -7,7 +7,7 @@
 **复现 MPPPB（MICRO 2017）**。原因：CRC-2 是 workshop（会务认定有风险），
 而 MPPPB 是主会论文、同属 SHiP 家族、年份安全（2017）、无需离线训练；
 现有 ChampSim 环境可直接复用。
-SHiP 作为**对照基线**（ChampSim 自带实现）；SHiP++ 不参与本轮实验。
+SHiP-PC 作为**对照基线**（ChampSim 自带 `replacement/ship`）；SHiP++ 不参与本轮实验。
 
 ## 历史分析（保留）
 

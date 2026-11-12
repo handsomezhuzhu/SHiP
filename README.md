@@ -25,7 +25,7 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 | SPEC CPU2017 ChampSim trace（8 条） | ✅ 见 `docs/benchmark.md` |
 | 论文选定：MPPPB（MICRO 2017） | ✅ 见 `docs/decision.md` |
 | MPPPB ChampSim 模块 v0（16 特征 / 采样器 / 训练 / 阈值决策） | ✅ 编译 + 冒烟通过，见 `docs/notes_mpppb.md` |
-| 实验基线：LRU + SHiP（SHiP++ 已移除） | ✅ |
+| 实验基线：LRU + SHiP-PC + MPPPB（SHiP++ 已移除） | ✅ 配置见 `docs/baselines.md` |
 | 阈值/位置搜索（论文未给数值） | 🚧 下一步 |
 | static MDPP 底座 / 真 bypass | ⏳ |
 | 完整 Benchmark + 技术报告 | ⏳ |
@@ -35,6 +35,7 @@ Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插�
 ```
 .
 ├── docs/                  # 文献调研、选题对比、实验记录
+│   ├── baselines.md       # LRU / SHiP-PC / MPPPB 的确切配置
 │   ├── papers.md          # 已收集论文清单（含来源链接）
 │   ├── candidates.md      # 各候选论文的复现难度/依赖/风险对比
 │   ├── decision.md        # 最终选题与决策记录
@@ -85,8 +86,8 @@ cd env/ChampSim
   ../../traces/410.bwaves-945B.champsimtrace.xz
 ```
 
-ChampSim 自带 5 种替换策略：`lru`、`srrip`、`drrip`、`random`、`ship`
-（`replacement/ship` 即 SHiP-PC 的参考实现，可直接作为复现基线/对照）。
+ChampSim 自带 `lru`、`srrip`、`drrip`、`random`、`ship`；
+本项目最终只跑 **LRU / SHiP-PC（`ship`）/ MPPPB** 三条，配置见 `docs/baselines.md`。
 
 批量跑策略 × trace 的脚本见 `scripts/run_matrix.sh`（🚧 待补）。
 

@@ -16,8 +16,9 @@
 // 结构：
 //   - 16 个参数化特征（论文 Table 1(b)，单线程版本）
 //   - 每个特征一张 6-bit 有符号权重表，预测值 = 各表权重之和（正 = dead）
-//   - 64 个采样组（1/32 sets），18-way，LRU 管理，存 partial tag /
-//     上次 confidence / 特征索引向量 / 位置
+//   - 64 个采样组（1/32 sets，2 MB LLC），18-way，LRU 管理，存 partial tag /
+//     上次 confidence / 特征索引向量 / 位置。采样率固定 1/32（论文：2 MB→64 组，
+//     8 MB→256 组），不沿用 ChampSim msl 的 set-dueling 采样率。
 //   - 训练：采样块被访问（且位置 < A）→ live，权重 -1；
 //           位置越过该特征的 A 参数或被逐出 → dead，权重 +1
 //   - 预测结果驱动 bypass / placement / promotion

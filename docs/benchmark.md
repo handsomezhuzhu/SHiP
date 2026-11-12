@@ -32,7 +32,8 @@
   - L1I 32 KB / L1D 32 KB（8/12-way，4/5 cycle）
   - L2 256 KB（1024 sets × 8 way，10 cycle）
   - **LLC 2 MB（2048 sets × 16 way，20 cycle）**，无 prefetcher
-  - LLC 替换策略：`lru` / `srrip` / `ship`，以及自研模块 `mpppb`（MPPPB，v0）
+  - LLC 替换策略（最终三条）：`lru`、`ship`（SHiP-PC）、`mpppb`（自研）；
+    确切参数见 `docs/baselines.md`
 - 编译：`scripts/build_policies.sh` → `env/ChampSim/bin/champsim_{lru,srrip,drrip,ship}`
 - 运行：`scripts/run_champsim.sh`（默认 warmup 50 M、仿真 150 M 指令，6 路并行）
 - 汇总：`scripts/summarize_champsim.py` → `results/champsim_results.csv`（IPC、LLC access/miss/MPKI）

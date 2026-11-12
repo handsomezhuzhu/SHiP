@@ -32,8 +32,7 @@ inline uint64_t bits_between(uint64_t v, int b, int e)
 
 mpppb::mpppb(CACHE* cache)
     : replacement(cache), NUM_SET(cache->NUM_SET), NUM_WAY(cache->NUM_WAY),
-      sample_rate_(champsim::msl::get_sample_rate(NUM_SET)),
-      num_samples_(champsim::msl::get_num_samples(NUM_SET)),
+      sample_rate_(NUM_SET >= 32 ? 32 : 1), num_samples_(NUM_SET >= 32 ? NUM_SET / 32 : NUM_SET),
       rrpv_values(static_cast<std::size_t>(NUM_SET * NUM_WAY), MAX_RRPV),
       bypassed(static_cast<std::size_t>(NUM_SET * NUM_WAY), 0),
       pending_conf(static_cast<std::size_t>(NUM_SET), 0),
