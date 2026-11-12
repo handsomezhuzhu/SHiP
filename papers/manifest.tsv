@@ -1,16 +1,26 @@
-file	title	venue	year	url
-ship_micro11.pdf	SHiP: Signature-based Hit Predictor for High Performance Caching	MICRO	2011	https://mrmgroup.cs.princeton.edu/papers/MICRO11_SHiP_Wu_Final.pdf
-perceptron_micro16.pdf	Perceptron Learning for Reuse Prediction	MICRO	2016	https://people.engr.tamu.edu/djimenez/pdfs/micro2016-perceptron.pdf
-mpppb_micro17.pdf	Multiperspective Reuse Prediction	MICRO	2017	https://people.engr.tamu.edu/djimenez/pdfs/p436-jimenez.pdf
-hawkeye_crc17.pdf	Hawkeye: Leveraging Belady's Algorithm for Improved Cache Replacement (CRC-2 version)	CRC-2 @ ISCA	2017	https://www.cs.utexas.edu/~lin/papers/crc17.pdf
-glider_micro19.pdf	Applying Deep Learning to the Cache Replacement Problem	MICRO	2019	https://www.cs.utexas.edu/~lin/papers/micro19c.pdf
-mockingjay_hpca22.pdf	Effective Mimicry of Belady's MIN Policy	HPCA	2022	https://www.cs.utexas.edu/~lin/papers/hpca22.pdf
-rlr_hpca21.pdf	Designing a Cost-Effective Cache Replacement Policy using Machine Learning	HPCA	2021	https://ece.umn.edu/users/jsartori/papers/hpca21.pdf
-care_2023.pdf	CARE: A Concurrency-Aware Enhanced Lightweight Cache Management Framework	HPCA	2023	https://grc.iit.edu/papers/2023/lu-2023-care-bc99.pdf
-cachefit_arxiv26.pdf	CacheFit: The Rising Cost of Cache Replacement and Constraint-Driven Redesign of LLC Replacement Policies	arXiv	2026	https://arxiv.org/pdf/2610.10579
+belady_expected_hit_count_arxiv18.pdf	Making Belady-Inspired Replacement Policies More Effective Using Expected Hit Count	arXiv	2018	https://arxiv.org/pdf/1808.05024
 belady_isca16.pdf	Back to the Future: Leveraging Belady's Algorithm for Improved Cache Replacement	ISCA	2016	https://www.cs.utexas.edu/~lin/papers/isca16.pdf
+cachefit_arxiv26.pdf	CacheFit: The Rising Cost of Cache Replacement and Constraint-Driven Redesign of LLC Replacement Policies	arXiv	2026	https://arxiv.org/pdf/2610.10579
+care_2023.pdf	CARE: A Concurrency-Aware Enhanced Lightweight Cache Management Framework	HPCA	2023	https://grc.iit.edu/papers/2023/lu-2023-care-bc99.pdf
+champsim_arxiv22.pdf	The Championship Simulator: Architectural Simulation for Education and Competition	arXiv	2022	https://arxiv.org/pdf/2210.14324
+dip_isca07.pdf	Adaptive Insertion Policies for High Performance Caching	DIP (ISCA)	2007	http://www.jaleels.org/ajaleel/publications/isca2007-dip.pdf
+expected_hit_count_crc17.pdf	Cache Replacement Policy Based on Expected Hit Count	CRC-2 @ ISCA	2017	https://www.dropbox.com/s/z685pmu1mn2lgr1/Expected%20Hit%20Count.pdf?dl=1
+file	title	venue	year	url
+glider_micro19.pdf	Applying Deep Learning to the Cache Replacement Problem	MICRO	2019	https://www.cs.utexas.edu/~lin/papers/micro19c.pdf
+harmony_crc17.pdf	Less is More: Leveraging Belady's Algorithm with Demand-based Learning	CRC-2 @ ISCA	2017	https://www.dropbox.com/s/xx1vnvcrarpfq1b/Less%20is%20More.pdf?dl=1
 harmony_isca18.pdf	Rethinking Belady's Algorithm to Accommodate Prefetching	ISCA	2018	https://www.cs.utexas.edu/~lin/papers/isca18.pdf
+hawkeye_crc17.pdf	Hawkeye: Leveraging Belady's Algorithm for Improved Cache Replacement (CRC-2 version)	CRC-2 @ ISCA	2017	https://www.cs.utexas.edu/~lin/papers/crc17.pdf
+hawkeye_crc17_slides.pdf	Hawkeye: Leveraging Belady's Algorithm for Improved Cache Replacement (CRC-2 slides)	CRC-2 @ ISCA	2017	https://www.dropbox.com/s/7riayq24gssxq1j/crc17-hawkeye.pdf?dl=1
 llc_characterization_iiswc20.pdf	Characterizing the Impact of Last-Level Cache Replacement Policies on Big-Data Workloads	IISWC	2020	https://people.engr.tamu.edu/djimenez/pdfs/IISWC2020.pdf
 mdpp_hpca16.pdf	Minimal Disturbance Placement and Promotion	HPCA	2016	https://people.engr.tamu.edu/djimenez/pdfs/hpca2016-mdpp.pdf
-belady_expected_hit_count_arxiv18.pdf	Making Belady-Inspired Replacement Policies More Effective Using Expected Hit Count	arXiv	2018	https://arxiv.org/pdf/1808.05024
-parrot_icml20.pdf	An Imitation Learning Approach for Cache Replacement	ICML	2020	https://arxiv.org/pdf/2006.16239
+mockingjay_hpca22.pdf	Effective Mimicry of Belady's MIN Policy	HPCA	2022	https://www.cs.utexas.edu/~lin/papers/hpca22.pdf
+mpppb_crc17.pdf	Multiperspective Reuse Prediction (CRC-2 version)	CRC-2 @ ISCA	2017	https://www.dropbox.com/s/jddnsi5letvo2p5/Multiperspective.pdf?dl=1
+mpppb_micro17.pdf	Multiperspective Reuse Prediction	MICRO	2017	https://people.engr.tamu.edu/djimenez/pdfs/p436-jimenez.pdf
+pacman_micro11.pdf	PACMan: Prefetch-Aware Cache Management for High Performance Caching	MICRO	2011	http://www.jaleels.org/ajaleel/publications/micro2011-PACMan.pdf
+parrot_icml20.pdf	An Imitation Learning Approach for Cache Replacement	ICML	2020	https://arxiv.org/pdf/2006.16239shipplusplus_crc17.pdf	SHiP++: Enhancing Signature-Based Hit Predictor for Improved Cache Performance	CRC-2 @ ISCA	2017	https://www.dropbox.com/s/algx6mwxa591uoy/Ship%2B%2B.pdf?dl=1
+perceptron_micro16.pdf	Perceptron Learning for Reuse Prediction	MICRO	2016	https://people.engr.tamu.edu/djimenez/pdfs/micro2016-perceptron.pdf
+red_crc17.pdf	ReD: A Policy Based on Reuse Detection for Demanding Block Selection in Last-Level Caches	CRC-2 @ ISCA	2017	https://www.dropbox.com/s/4iiosztjzr008z7/ReD.pdf?dl=1
+rlr_hpca21.pdf	Designing a Cost-Effective Cache Replacement Policy using Machine Learning	HPCA	2021	https://ece.umn.edu/users/jsartori/papers/hpca21.pdf
+rrip_isca10.pdf	High Performance Cache Replacement Using Re-Reference Interval Prediction (RRIP)	ISCA	2010	http://www.jaleels.org/ajaleel/publications/isca2010-rrip.pdf
+sdbp_micro10.pdf	Sampling Dead Block Prediction	SDBP (MICRO)	2010	https://people.engr.tamu.edu/djimenez/pdfs/micro2010_sampler_dist.pdf
+ship_micro11.pdf	SHiP: Signature-based Hit Predictor for High Performance Caching	MICRO	2011	https://mrmgroup.cs.princeton.edu/papers/MICRO11_SHiP_Wu_Final.pdf
