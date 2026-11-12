@@ -9,7 +9,7 @@
 |---|---|---|
 | **A. 替换策略基础** | DIP (ISCA'07)、RRIP/SRRIP/DRRIP (ISCA'10)、SDBP (MICRO'10)、PACMan (MICRO'11) | 提供 RRPV、set dueling、dead-block、预取感知这些"零件"；DRRIP 就是必备 baseline |
 | **B. 签名/插入预测** | SHiP (MICRO'11)、**SHiP++ (CRC-2'17)**、EHC (CRC-2'17)、ReD (CRC-2'17)、MDPP (HPCA'16) | SHiP 家族本身：用 PC/签名预测该不该把新行插到低优先级 |
-| **C. Belady-OPT 监督学习** | Belady'16 (ISCA'16)、Hawkeye (ISCA'17)、Harmony (ISCA'18)、Glider (MICRO'19)、Mockingjay (HPCA'22) | 用"过去如果按 OPT 会怎样"当标签，学一个二分类/多分类器；SHiP++ 之后的主要竞争对手 |
+| **C. Belady-OPT 监督学习** | Hawkeye/Belady'16 (ISCA'16)、Harmony (ISCA'18)、Glider (MICRO'19)、Mockingjay (HPCA'22) | 用"过去如果按 OPT 会怎样"当标签，学一个二分类/多分类器；SHiP++ 之后的主要竞争对手 |
 | **D. 感知机与 ML** | Perceptron Reuse (MICRO'16)、MPPPB (MICRO'17)、RLR (HPCA'21)、PARROT (ICML'20)、CARE (HPCA'23)、CacheFit (2026) | 多特征/端到端学习、低成本方案、并发感知、开销批评 |
 | **E. 评测与工具** | ChampSim (arXiv'22)、IISWC'20 策略对比 | 仿真器与"怎么公平比较替换策略"的方法论 |
 
@@ -22,7 +22,7 @@
 | **SHiP++** `shipplusplus_crc17.pdf` | 4 p | 5 个 enhancement 的精确定义、SHCT 语义、插入点规则、开销表；能默写伪代码 |
 | **SHiP** `ship_micro11.pdf` | 12 p | 签名、SHCT、R 位的原始定义；SHiP 与 SRRIP 的分工（只改插入，不改 victim/hit） |
 | **RRIP/DRRIP** `rrip_isca10.pdf` | 12 p | RRPV 状态机、SRRIP/DRRIP、set dueling——所有实验的基线 |
-| **Hawkeye** `hawkeye_crc17.pdf` + `hawkeye_crc17_slides.pdf` | 4 p + 33 p | 主要对比对象；OPTgen + 采样器 + 二分类器怎么工作；slides 里有 C1–C4 结果 |
+| **Hawkeye** `belady_isca16.pdf`（+ `hawkeye_crc17.pdf` / slides） | 12 p | 主要对比对象；OPTgen + 采样器 + 二分类器怎么工作；slides 里有 C1–C4 结果 |
 | **ChampSim** `champsim_arxiv22.pdf` | 10 p | 仿真器结构、统计口径、怎么写实验方法一节 |
 
 ### P1 — 基线与直接对照（做实验/写 related work 必看）
@@ -68,7 +68,7 @@
 
 | 论文 | 长版 | 短版 | 建议 |
 |---|---|---|---|
-| Hawkeye | ISCA'17 正式版（待补） | CRC-2 4 页 + 33 页 slides | 先读 4 页，slides 查数据 |
+| Hawkeye | ISCA'16 正式版（`belady_isca16.pdf`，本地已有） | CRC-2 4 页 + 33 页 slides | 读 ISCA'16 正式版；CRC 版查预取相关差异 |
 | MPPPB | MICRO'17 13 页 | CRC-2 4 页 | 读 13 页版 |
 | Harmony | ISCA'18 14 页 | CRC-2 4 页 | 读 14 页版 |
 | EHC | arXiv 10 页 | CRC-2 4 页 | 读 10 页版 |

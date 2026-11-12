@@ -88,7 +88,7 @@ SHiP (MICRO'11)
  ├─ SHiP++ (CRC-2 @ ISCA'17)        改进 SHCT 训练与预测粒度
  ├─ Perceptron Reuse Prediction (MICRO'16)
  │   └─ MPPPB (MICRO'17)            多视角感知机
- ├─ Hawkeye (ISCA'17)               用 Belady 最优解做在线监督学习
+ ├─ Hawkeye (ISCA'16)               用 Belady 最优解做在线监督学习
  │   ├─ Glider (MICRO'19)           SVM + 离线 LSTM 特征
  │   └─ Mockingjay (HPCA'22)        多分类复用距离预测
  └─ RLR (HPCA'21)                   低成本、无 PC 的替代方案

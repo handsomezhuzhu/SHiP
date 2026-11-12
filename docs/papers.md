@@ -8,7 +8,6 @@
 | 优先级 | 文献 | 获取方式 | 是否必须 |
 |---|---|---|---|
 | P0 | *Cache Replacement Policies*（Jain & Lin, Morgan & Claypool, 2019） | 学校图书馆电子书 / Springer | 写 related work 很省事，**建议拿** |
-| P1 | Hawkeye 正式版 (ISCA 2017, DOI `10.1145/3079856.3080222`) | ACM DL（校园网） | 已有 CRC-2 4 页版 + 33 页 slides，可先用；正式版用于引用和完整数据 |
 | P2 | Leeway（CRC-2 参赛作品） | CRC-2 官网 `crc2.ece.tamu.edu` → Participants | 只有在做 5 策略横向对比时才需要 |
 | P2（非论文） | SPEC CPU2006 的 CRC-2 trace | CRC-2 官网 Dropbox | 只有严格对齐 SHiP++ 原文实验时才需要；用 SPEC2017 可替代并解释偏差 |
 
@@ -20,7 +19,7 @@
 | 2 | SHiP++: Enhancing Signature-Based Hit Predictor for Improved Cache Performance | CRC-2 @ ISCA 2017 | 改进 SHCT 训练方式/插入点/预取处理（CRC 第 2 名） | `shipplusplus_crc17.pdf` | ✅ |
 | 3 | Perceptron Learning for Reuse Prediction | MICRO 2016 | 用感知机组合多特征做复用预测 | `perceptron_micro16.pdf` | ✅ |
 | 4 | Multiperspective Reuse Prediction (MPPPB) | MICRO 2017 | 多视角感知机 + 采样器，驱动插入/提升/bypass | `mpppb_micro17.pdf` | ✅ |
-| 5 | Hawkeye: Leveraging Belady's Algorithm for Improved Cache Replacement | ISCA 2017 | 用 Belady OPT 在历史上生成监督信号，在线训练二分类器 | `hawkeye_crc17.pdf`（CRC-2 4 页版）+ `hawkeye_crc17_slides.pdf` | ⚠️ 正式版待补 |
+| 5 | Back to the Future: Leveraging Belady's Algorithm for Improved Cache Replacement (Hawkeye) | ISCA 2016 | 用 Belady OPT 在历史上生成监督信号，在线训练二分类器 | `belady_isca16.pdf`（正式版）+ `hawkeye_crc17.pdf`（CRC-2 版）+ `hawkeye_crc17_slides.pdf` | ✅ |
 | 6 | Applying Deep Learning to the Cache Replacement Problem (Glider) | MICRO 2019 | 离线 LSTM 提取控制流特征 → 在线 SVM 预测 | `glider_micro19.pdf` | ✅ |
 | 7 | Effective Mimicry of Belady's MIN Policy (Mockingjay) | HPCA 2022 | 多分类复用距离预测，直接逼近 MIN | `mockingjay_hpca22.pdf` | ✅ |
 | 8 | Designing a Cost-Effective Cache Replacement Policy using Machine Learning (RLR) | HPCA 2021 | 低成本、无需 PC 签名的 ML 替换策略 | `rlr_hpca21.pdf` | ✅ |
@@ -58,7 +57,6 @@
 
 | 论文 | 出处 | 备注 |
 |---|---|---|
-| Hawkeye 正式版 | ISCA 2017, DOI 10.1145/3079856.3080222 | 本地只有 CRC-2 的 4 页版本；正式版在 ACM DL |
 | Cache Replacement Policies（Jain & Lin 专著） | Morgan & Claypool, 2019 | 综述性教材，适合写 related work，图书馆可能有电子版 |
 | Leeway（CRC-2 参赛作品） | CRC-2 官网 `crc2.ece.tamu.edu` | 作为对比基线时再补 |
 | SPEC CPU2006 的 CRC-2 trace | CRC-2 官网（Dropbox 链接） | 若要严格对齐 Hawkeye/SHiP++ 原文实验，需要 2006 trace；文件很大，按需下载 |
