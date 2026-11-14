@@ -52,7 +52,8 @@ private:
     int b;              // first bit of the slice (inclusive)
     int e;              // last bit of the slice (inclusive)
     int w;              // PC-history depth, 0 = current instruction
-    bool mix_pc;        // XOR the slice with the current PC
+    bool mix_pc;        // XOR the slice with the current PC (bit 0 of X)
+    std::uint8_t x_mask; // full X mask: bit 0 = XOR PC, bit 1 = prefetch toggle
     std::uint8_t bits;  // index width
     std::uint16_t entries;
   };
@@ -113,8 +114,10 @@ private:
   int pos2_ = 3;
   int pos3_ = 2;
 
-  // ---- author profile (CRC2 config 1: single-core MDPP) ----
+  // ---- author profile (CRC2 config 1/2: single-core MDPP) ----
   bool author_ = false;        // MDPP + author training + author feature set
+  bool author2_ = false;       // CRC2 config 2: single-core MDPP with prefetcher
+  bool improve_ = false;       // TA-MPPPB: translation/access-aware reuse prediction & protection
   bool use_mdpp_ = false;      // tree-based pseudo-LRU base
   bool direct_index_ = false;  // direct bit extraction + modulo (author code)
   bool author_train_ = false;  // init weight 1, threshold 128, dead zone
@@ -147,11 +150,11 @@ private:
   void describe_features();
   std::vector<std::int8_t>& weights(std::size_t cpu, int feature);
   std::uint8_t index_of(const feature& f, const core_view& st, long set, std::uint64_t ip,
-                        std::uint64_t addr, std::uint64_t block, bool insert);
+                        std::uint64_t addr, std::uint64_t block, bool insert, access_type type);
   std::int16_t predict(core_view& st, long set, std::uint64_t ip, std::uint64_t addr, std::uint64_t block,
-                       bool insert, std::array<std::uint8_t, kFeatureCount>& key);
+                       bool insert, access_type type, std::array<std::uint8_t, kFeatureCount>& key);
   void visit_sampler(core_view& st, long set, std::uint16_t ptag, std::int16_t score,
-                     const std::array<std::uint8_t, kFeatureCount>& key);
+                     const std::array<std::uint8_t, kFeatureCount>& key, access_type type);
   void learn_reuse(core_view& st, const item& old, int position);
   void learn_demote(core_view& st, const item& old, int new_position);
   void nudge(core_view& st, int feature, std::uint8_t index, int delta);

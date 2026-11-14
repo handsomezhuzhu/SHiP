@@ -1,110 +1,107 @@
-# SHiP 方向论文复现 — MPPPB（MICRO 2017）
+# MPPPB（MICRO 2017）复现与 TA-MPPPB 原创改进
 
-《并行计算机体系结构》课程期末大作业（程序复现与运行方向）。
-最终目标：在 2027-01-14 前完成 **MPPPB（Multiperspective Reuse Prediction, MICRO 2017）**
-的复现 + Benchmark 数据 + Technical Report。
-SHiP 作为同族对照基线（SHiP++ 不参与本轮实验）。
+《并行计算机体系结构》课程期末大作业（程序复现与微架构改进方向）。本项目在现代 ChampSim 上完整复现了 **MPPPB（Multiperspective Reuse Prediction, Jiménez & Teran, MICRO-50 2017）** 的 **Single-Core Static MDPP** 架构（同时覆盖无硬件预取器与开启硬件预取器两种对照场景），并针对现代虚存与多级缓存交互下的 Zero-IP 冲突与访问语义失配问题，提出了零额外 SRAM 开销的原创改进方案 **TA-MPPPB（Translation- & Access-Aware MPPPB）**。
 
-## 1. 选题定位
+---
 
-**SHiP = Signature-based Hit Predictor**，Wu, Jaleel, Martonosi, Steely, Emer，MICRO 2011。
-核心思想：用 load PC（或 PC+offset、指令序列）作为签名，用一个 Signature History Counter
-Table（SHCT）学习每种签名的再引用行为，在 miss 时预测新插入行的 RRPV，从而把
-"不会再被用到"的流式数据插到更易被替换的位置。SHiP 本身不改变 SRRIP 的命中提升和
-受害者选择逻辑，属于"插入策略"层面的工作。
+## 1. 核心实验总览（8 条 DPC-3 SPEC CPU2006 Trace，50M Warmup + 150M Sim）
 
-> 注意：作业要求复现**近十年**（2016 以后）的论文，SHiP 原文（2011）不在范围内。
-> 因此实际复现对象应从 SHiP 的后续工作中选择，见 `docs/candidates.md`。
+所有运行均在云端并行集群完成并通过 [`scripts/verify_results.py`](scripts/verify_results.py) 全量校验（`bad NONE`，指令数 ∈ `[150,000,000, 150,000,020]`）。
 
-## 2. 当前进度
+### 1.1 无硬件预取器对照（基于 `author1` 与调优 `c4` 底座）
 
-| 项目 | 状态 |
-|---|---|
-| 收集 SHiP 系论文（26 篇，含 MPPPB / Hawkeye / Glider / SHiP++ 等） | ✅ 见 `docs/papers.md` |
-| ChampSim 编译环境（含 vcpkg 依赖） | ✅ 已编译通过 |
-| SPEC CPU2017 ChampSim trace（8 条） | ✅ 见 `docs/benchmark.md` |
-| 论文选定：MPPPB（MICRO 2017） | ✅ 见 `docs/decision.md` |
-| MPPPB ChampSim 模块 v1（重写：特征索引/训练/放置/bypass 修复） | ✅ 见 `docs/review_mpppb_code.md` |
-| 实验基线：LRU + SHiP-PC + MPPPB（SHiP++ 已移除） | ✅ 配置见 `docs/baselines.md` |
-| 阈值/位置搜索（论文未给数值） | ✅ c 组 `250/150/75/0/100`，π=3/3/2 |
-| **Matrix-1：8 trace × 3 策略，50 M + 150 M** | ✅ MPPPB **+3.76% IPC / −5.02% MPKI**；SHiP +4.30% IPC，见 `docs/results_matrix1.md` |
-| **单核 MDPP（CRC2 config1，Daytona）** | ✅ 最优 c4：MPPPB **+4.53% IPC / −7.86% MPKI**（author1 +4.44%/−7.42%）；略高于 SHiP（+0.22%），见 `docs/results_mdpp_validate.md` |
-| τ/π 参数搜索（mcf+xalan 5 M+5 M） | ✅ 18 组；author1 近局部最优，c4 边际最优，c14 MPKI 持平，见 `docs/results_mdpp_search.md` |
-| static MDPP 底座 / 真 bypass | ✅ 已实现；多核 Table 2 待做 |
-| 技术报告 | 🚧 |
+| 策略 / 配置 | Geomean IPC 增益 (vs `LRU`) | Geomean All-MPKI 变化 | Geomean Demand-MPKI 变化 | 说明与详报 |
+| --- | ---: | ---: | ---: | --- |
+| `LRU` | 0.00% | 0.00% | 0.00% | 传统基线 (`configs/champsim_lru.json`) |
+| `SHiP-PC` | +4.30% | -3.69% | -8.07% | 同族对比基线 (`configs/champsim_ship.json`) |
+| `MPPPB (author1)` | +4.44% | -7.43% | -9.02% | 原作者静态 MDPP 参数（[`results_mdpp_author1.md`](docs/results_mdpp_author1.md)） |
+| **`TA-MPPPB (ta_nopref)`** | **+4.56%** | -0.55% | **-9.60%** | 本文原创改进（基于 `author1`，`MPPPB_IMPROVE=1`） |
+| `MPPPB (c4)` | +4.53% | **-7.87%** | -9.32% | bypass 阈值搜索最优静态组（[`results_mdpp_validate.md`](docs/results_mdpp_validate.md)） |
+| **`TA-MPPPB (ta_c4)`** | **+4.71%** | -0.89% | **-9.90%** | 本文原创改进（基于 `c4`，`MPPPB_IMPROVE=1`） |
 
-## 3. 目录结构
+> 注：本项目早期探索曾评估过 SRRIP 底座（`Matrix-1`，MPPPB +3.76% IPC vs SHiP +4.30%）；因论文单核主体采用 **Static MDPP**（真 bypass + 16 位置树状 PLRU 最小扰动提升），最终全套对照与改进均以 **Single-Core Static MDPP** 为唯一权威基准。
 
-```
+### 1.2 开启硬件预取器对照（`L1D: next_line` + `L2C: ip_stride`）
+
+| 策略 / 配置 | Geomean IPC 增益 (vs `LRU_pref`) | Geomean Demand-MPKI 变化 | Geomean LOAD+RFO MPKI 变化 | 说明与详报 |
+| --- | ---: | ---: | ---: | --- |
+| `LRU_pref` | 0.00% | 0.00% | 0.00% | 开启 L1D/L2C 预取器基线 (`configs/champsim_lru_pref.json`) |
+| `SHiP_pref` | +2.56% | -5.82% | -7.15% | 同族对比基线 (`configs/champsim_ship_pref.json`) |
+| `MPPPB (author2)` | +1.66% | -5.49% | -6.71% | 作者预取配置复现（[`results_mdpp_pref.md`](docs/results_mdpp_pref.md)） |
+| **`TA-MPPPB (ta_pref)`** | **+2.60%** (**超 `author2` +0.92%**) | **-5.85%** | **-7.22%** | 本文原创改进（反超 `SHiP_pref`，[`results_ta_mpppb.md`](docs/results_ta_mpppb.md)） |
+
+---
+
+## 2. 原创改进核心：TA-MPPPB（零额外 SRAM 开销）
+
+针对现有 MPPPB 后续改进（如 MS-MPPPB / DS-MPPPB / Fit-MPPPB / 预取签名位扩展）未处理的**现代虚存+回写体系结构中 `ip == 0` 特征坍缩问题**，TA-MPPPB 在保持原有 **60.41 KiB** 静态预测器/采样器存储零增长的前提下提出三项协同机制（实现于 [`champsim_modules/mpppb/mpppb.h`](champsim_modules/mpppb/mpppb.h) 与 [`champsim_modules/mpppb/mpppb.cc`](champsim_modules/mpppb/mpppb.cc)）：
+
+1. **页表游走（`TRANSLATION`）防旁路与伪指令页号解耦**：永不旁路页表填回、将其插入并命中提升至 MRU，对 `ip == 0` 的 `TRANSLATION`/`PREFETCH` 构造页号伪 PC `0x9e3779b9 ^ (block >> 6)` 避免 PC 表桶 0 冲突，并禁止 `pc == 0` 污染 `pc_ring` 移位历史。
+2. **保留创建者特征的写回（`WRITE`）采样学习**：修复“跳过写回导致 91%–97% 写回命中损失负权重训练（Write-Sampler Starvation）”问题——在 `WRITE` 命中采样器时先回传 `learn_reuse (-1)` 信用再恢复原创建者（`LOAD`/`RFO`）的采样项状态（`s.line[0] = previous`），同时适度放宽脏写回旁路阈值以释放读缓存空间。
+3. **预取（`PREFETCH`）自适应准入收紧**：在开启硬件预取器时提高 `PREFETCH` 旁路门槛（`thresh + 18`），抑制低价值猜测预取行驱逐高价值需求行与页表行。
+
+---
+
+## 3. 目录结构与核心文档
+
+```text
 .
-├── docs/                  # 文献调研、选题对比、实验记录
-│   ├── baselines.md       # LRU / SHiP-PC / MPPPB 的确切配置
-│   ├── papers.md          # 已收集论文清单（含来源链接）
-│   ├── candidates.md      # 各候选论文的复现难度/依赖/风险对比
-│   ├── decision.md        # 最终选题与决策记录
-│   ├── notes_mpppb.md     # MPPPB 精读笔记与复现方案
-│   ├── reading-plan.md    # 论文主题分类与阅读优先级
-│   └── benchmark.md       # trace 清单、仿真参数、初步结果
-├── papers/                # 论文 PDF（gitignore，可重新下载）
-│   └── manifest.tsv       # 下载清单
-├── env/                   # ChampSim 源码与 Python venv（gitignore）
-├── traces/                # ChampSim trace（gitignore，体积大）
-├── champsim_modules/      # 自研替换策略模块（mpppb）
-├── configs/               # 各替换策略的 ChampSim 配置
-├── scripts/               # 下载、编译、批量实验脚本
-├── sim/                   # 自研轻量 trace-driven LLC 模拟器
-└── results/               # 实验输出（csv/图）
+├── champsim_modules/mpppb/   # Static MDPP 核心实现与 TA-MPPPB (MPPPB_IMPROVE=1)
+├── configs/                  # 无预取与有预取对照配置文件（LRU / SHiP / MPPPB）
+├── docs/
+│   ├── final_report.md       # 期末最终技术报告（复现与原创改进完整论述）
+│   ├── results_mdpp_author1.md  # 无预取器 author1 复现详报
+│   ├── results_mdpp_validate.md # 无预取器 8-trace c4/author1 验证报告
+│   ├── results_mdpp_pref.md     # 开启硬件预取器对照复现报告
+│   ├── results_ta_mpppb.md      # TA-MPPPB 原创改进与 v1/v2 消融报告
+│   ├── review_mpppb_code.md     # 13 处复现 Bug 排查与对齐校验记录
+│   └── papers.md / decision.md / baselines.md / benchmark.md
+├── results/                  # 各实验阶段汇总 CSV 与 raw JSON/log 归档
+└── scripts/                  # 编译、云端调度、校验 (verify_results.py) 与汇总脚本
 ```
 
-## 4. 环境
+---
 
-- CPU: 24 核，内存 61 GB，磁盘可用 ~160 GB
-- OS: Linux (x86-64)，g++ 16.2.1
-- cmake 由 `env/venv` 提供（系统未装），vcpkg 依赖已编译进 `env/ChampSim/vcpkg_installed`
-- ChampSim: `develop` 分支，commit `410cee62d9c429c043ea611325ce00e6c303be2a` (2026-09-04)
+## 4. 环境与构建运行方式
 
-### 从零重建
+- **仿真器版本**：ChampSim `develop` @ `410cee62d9c429c043ea611325ce00e6c303be2a`
+- **默认基线环境**（需已运行 [`scripts/build_champsim.sh`](scripts/build_champsim.sh) 与 [`scripts/get_traces.sh`](scripts/get_traces.sh)）：
 
 ```bash
-# 1. 论文（能公开下载的部分；其余见 docs/papers.md 的"待获取"列）
-./scripts/fetch_papers.sh
-
-# 2. ChampSim（会 clone 到 env/ChampSim 并编译 vcpkg 依赖，约 10 分钟）
-./scripts/build_champsim.sh
-
-# 2b. 编译自研策略（MPPPB）
+# 1. 编译无预取器与开启硬件预取器的 ChampSim 二进制
 ./scripts/build_mpppb.sh
 
-# 3. Benchmark trace（约 3.4 GB）
-./scripts/get_traces.sh
+# 2. 运行原版 Static MDPP（如 author1 无预取 / author2 开启预取）
+MPPPB_PROFILE=author1 ./env/ChampSim/bin/champsim_mpppb_mdpp \
+  --warmup-instructions 50000000 --simulation-instructions 150000000 \
+  traces/450.soplex-92B.champsimtrace.xz
+
+MPPPB_PROFILE=author2 ./env/ChampSim/bin/champsim_mpppb_mdpp_pref \
+  --warmup-instructions 50000000 --simulation-instructions 150000000 \
+  traces/483.xalancbmk-127B.champsimtrace.xz
+
+# 3. 启用 TA-MPPPB 原创改进（仅需追加 MPPPB_IMPROVE=1）
+MPPPB_PROFILE=author2 MPPPB_IMPROVE=1 ./env/ChampSim/bin/champsim_mpppb_mdpp_pref \
+  --warmup-instructions 50000000 --simulation-instructions 150000000 \
+  traces/470.lbm-1274B.champsimtrace.xz
+
+# 4. 校验并汇总全部实验结果
+python scripts/summarize_champsim.py results/raw/ta_mpppb results/ta_mpppb_results.csv
+python scripts/verify_results.py --root results/raw/ta_mpppb \
+  --policies ta_nopref ta_c4 ta_pref --baseline ta_nopref \
+  --csv results/ta_mpppb_results.csv --min-instr 150000000 --max-instr 150000020
 ```
 
-## 5. ChampSim 快速运行
+---
 
-```bash
-cd env/ChampSim
-./bin/champsim \
-  --warmup-instructions 200000000 \
-  --simulation-instructions 500000000 \
-  ../../traces/410.bwaves-945B.champsimtrace.xz
-```
+## 5. 相关文献脉络
 
-ChampSim 自带 `lru`、`srrip`、`drrip`、`random`、`ship`；
-本项目最终只跑 **LRU / SHiP-PC（`ship`）/ MPPPB** 三条，配置见 `docs/baselines.md`。
-
-批量跑策略 × trace 的脚本见 `scripts/run_matrix.sh`（🚧 待补）。
-
-## 6. 参考文献
-
-见 `docs/papers.md`。核心脉络：
-
-```
+详见 [`docs/papers.md`](docs/papers.md)：
+```text
 SHiP (MICRO'11)
- ├─ SHiP++ (CRC-2 @ ISCA'17)        改进 SHCT 训练与预测粒度
+ ├─ SHiP++ (CRC-2 @ ISCA'17)
  ├─ Perceptron Reuse Prediction (MICRO'16)
- │   └─ MPPPB (MICRO'17)            多视角感知机
- ├─ Hawkeye (ISCA'16)               用 Belady 最优解做在线监督学习
- │   ├─ Glider (MICRO'19)           SVM + 离线 LSTM 特征
- │   └─ Mockingjay (HPCA'22)        多分类复用距离预测
- └─ RLR (HPCA'21)                   低成本、无 PC 的替代方案
+ │   └─ MPPPB (MICRO'17)  ──► 本项目复现主体 + TA-MPPPB 原创改进
+ ├─ Hawkeye (ISCA'16) ─► Glider (MICRO'19) ─► Mockingjay (HPCA'22)
+ └─ RLR (HPCA'21)
 ```

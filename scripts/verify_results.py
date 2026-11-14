@@ -28,12 +28,27 @@ DEFAULT_POLICIES = ["lru", "ship", "mpppb"]
 BAD_WORDS = ("panic", "deadlock", "error", "abort", "out_of_range")
 
 
+def _parse_elapsed(text: str) -> float:
+    """Parse either plain numeric seconds or key-value elapsed_sec=<float>."""
+    for line in text.splitlines():
+        if line.startswith("elapsed_sec="):
+            try:
+                return float(line.split("=", 1)[1].strip())
+            except ValueError:
+                return 0.0
+    try:
+        return float(text.strip() or 0)
+    except ValueError:
+        return 0.0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
     ap.add_argument("--csv", default=None)
     ap.add_argument("--traces", nargs="+", default=DEFAULT_TRACES)
     ap.add_argument("--policies", nargs="+", default=DEFAULT_POLICIES)
+    ap.add_argument("--baseline", default="lru")
     ap.add_argument("--min-instr", type=int, default=150_000_000)
     ap.add_argument("--max-instr", type=int, default=150_000_010)
     args = ap.parse_args()
@@ -60,14 +75,15 @@ def main() -> int:
             if core["cycles"] <= 0:
                 bad.append(("cycles", pol, tr, core["cycles"]))
             tpath = os.path.join(args.root, pol, tr + ".time")
-            if not os.path.exists(tpath) or int(open(tpath).read().strip() or 0) <= 0:
+            if not os.path.exists(tpath) or _parse_elapsed(open(tpath).read()) <= 0:
                 bad.append(("time", pol, tr))
-            epath = os.path.join(args.root, pol, tr + ".err")
-            if os.path.exists(epath):
-                text = open(epath, errors="ignore").read().lower()
-                for word in BAD_WORDS:
-                    if word in text:
-                        bad.append(("err", pol, tr, word))
+            for ext in (".err", ".log"):
+                epath = os.path.join(args.root, pol, tr + ext)
+                if os.path.exists(epath):
+                    text = open(epath, errors="ignore").read().lower()
+                    for word in BAD_WORDS:
+                        if word in text:
+                            bad.append((ext.lstrip("."), pol, tr, word))
 
     if args.csv:
         csv_rows = list(csv.DictReader(open(args.csv)))
@@ -88,13 +104,13 @@ def main() -> int:
     print("expected_runs", len(args.traces) * len(args.policies))
     print("bad", bad if bad else "NONE")
     for pol in args.policies:
-        if pol == "lru":
+        if pol == args.baseline:
             continue
         speedups, ratios = [], []
         for tr in args.traces:
-            if (tr, "lru") not in rows or (tr, pol) not in rows:
+            if (tr, args.baseline) not in rows or (tr, pol) not in rows:
                 continue
-            lru = rows[(tr, "lru")]
+            lru = rows[(tr, args.baseline)]
             cur = rows[(tr, pol)]
             speedups.append((cur[0] / cur[1]) / (lru[0] / lru[1]))
             ratios.append((cur[2] / cur[0]) / (lru[2] / lru[0]))

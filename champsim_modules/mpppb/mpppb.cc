@@ -16,6 +16,12 @@ struct probe_counters {
   long matched = 0;
   long unmatched = 0;
   long bypassed = 0;
+  long demand_bypass = 0;
+  long pref_bypass = 0;
+  long write_fills = 0;
+  long trans_access = 0;
+  long trans_hit = 0;
+  long trans_fills = 0;
   long promoted = 0;
   long kept = 0;
   std::array<long, 6> bucket{};
@@ -108,29 +114,56 @@ mpppb::mpppb(CACHE* cache)
         slot = static_cast<int>(parsed);
     }
   };
-  if (const char* profile = std::getenv("MPPPB_PROFILE"); profile != nullptr && std::strcmp(profile, "author1") == 0) {
-    // CRC2 config 1: single core, 2 MB LLC, no prefetcher, static MDPP.
-    author_ = true;
-    use_mdpp_ = true;
-    direct_index_ = true;
-    author_train_ = true;
-    bypass_duel_ = true;
-    train_threshold_ = 128;
-    theta_ = 109;
-    theta2_ = 135;
-    promotion_threshold_ = 82;
-    bypass_dt1_ = 56;
-    bypass_dt2_ = 256;
-    leaders1_ = 32;
-    leaders2_ = 64;
-    init_weight_ = 1;
-    plv_[0][0] = -15;
-    plv_[0][1] = 0;
-    plv_[1][0] = 35;
-    plv_[1][1] = 12;
-    plv_[2][0] = 44;
-    plv_[2][1] = 15;
+  if (const char* profile = std::getenv("MPPPB_PROFILE"); profile != nullptr) {
+    if (std::strcmp(profile, "author1") == 0) {
+      // CRC2 config 1: single core, 2 MB LLC, no prefetcher, static MDPP.
+      author_ = true;
+      use_mdpp_ = true;
+      direct_index_ = true;
+      author_train_ = true;
+      bypass_duel_ = true;
+      train_threshold_ = 128;
+      theta_ = 109;
+      theta2_ = 135;
+      promotion_threshold_ = 82;
+      bypass_dt1_ = 56;
+      bypass_dt2_ = 256;
+      leaders1_ = 32;
+      leaders2_ = 64;
+      init_weight_ = 1;
+      plv_[0][0] = -15;
+      plv_[0][1] = 0;
+      plv_[1][0] = 35;
+      plv_[1][1] = 12;
+      plv_[2][0] = 44;
+      plv_[2][1] = 15;
+    } else if (std::strcmp(profile, "author2") == 0) {
+      // CRC2 config 2: single core, 2 MB LLC, with prefetcher, static MDPP.
+      author_ = true;
+      author2_ = true;
+      use_mdpp_ = true;
+      direct_index_ = true;
+      author_train_ = true;
+      bypass_duel_ = true;
+      train_threshold_ = 128;
+      theta_ = 109;
+      theta2_ = 135;
+      promotion_threshold_ = 178;
+      bypass_dt1_ = 42;
+      bypass_dt2_ = 48;
+      leaders1_ = 32;
+      leaders2_ = 64;
+      init_weight_ = 1;
+      plv_[0][0] = -15;
+      plv_[0][1] = 0;
+      plv_[1][0] = 35;
+      plv_[1][1] = 12;
+      plv_[2][0] = 44;
+      plv_[2][1] = 15;
+    }
   }
+  if (const char* imp = std::getenv("MPPPB_IMPROVE"); imp != nullptr && imp[0] != '\0' && std::strcmp(imp, "0") != 0)
+    improve_ = true;
   if (const char* base = std::getenv("MPPPB_BASE"); base != nullptr && std::strcmp(base, "mdpp") == 0)
     use_mdpp_ = true;
   read_env("MPPPB_TRAIN_THRESHOLD", train_threshold_);
@@ -187,11 +220,44 @@ mpppb::~mpppb()
                  g_probe.fills, g_probe.matched, g_probe.unmatched, g_probe.bypassed, g_probe.promoted, g_probe.kept,
                  g_probe.bucket[0], g_probe.bucket[1], g_probe.bucket[2], g_probe.bucket[3], g_probe.bucket[4],
                  g_probe.bucket[5]);
+    std::fprintf(stderr,
+                 "mpppb_ta: demand_bypass=%ld pref_bypass=%ld write_fills=%ld trans_access=%ld trans_hit=%ld trans_fills=%ld\n",
+                 g_probe.demand_bypass, g_probe.pref_bypass, g_probe.write_fills, g_probe.trans_access, g_probe.trans_hit,
+                 g_probe.trans_fills);
   }
 }
 
 void mpppb::describe_features()
 {
+  if (author2_) {
+    // CRC2 config 2 feature table (`single_2`, Table 2(b) of mpppb_crc17.pdf).
+    auto add_x = [this](view kind, int a, int b, int e, int w, std::uint8_t xm) {
+      int entries = 256;
+      if (kind == view::offset)
+        entries = (xm != 0) ? 256 : (1 << std::max(0, e - b));
+      else if (kind != view::pc && kind != view::address)
+        entries = (xm & 1U) ? 256 : ((xm & 2U) ? 4 : 2);
+      plan_.push_back(feature{kind, a, b, e, w, (xm & 1U) != 0, xm, 0, static_cast<std::uint16_t>(entries)});
+    };
+    add_x(view::insert, 15, 0, 0, 0, 0);
+    add_x(view::insert, 16, 0, 0, 0, 1);
+    add_x(view::insert, 6, 0, 0, 0, 1);
+    add_x(view::offset, 14, 0, 7, 0, 2);
+    add_x(view::bias, 17, 0, 0, 0, 3);
+    add_x(view::burst, 8, 0, 0, 0, 2);
+    add_x(view::pc, 6, 5, 48, 0, 3);
+    add_x(view::lastmiss, 15, 0, 0, 0, 2);
+    add_x(view::address, 17, 1, 32, 0, 2);
+    add_x(view::pc, 17, 6, 20, 0, 1);
+    add_x(view::pc, 6, 4, 11, 2, 2);
+    add_x(view::bias, 13, 0, 0, 0, 2);
+    add_x(view::offset, 8, 1, 6, 0, 2);
+    add_x(view::pc, 6, 5, 77, 4, 1);
+    add_x(view::address, 11, 8, 19, 0, 0);
+    add_x(view::address, 16, 8, 16, 0, 0);
+    return;
+  }
+
   if (author_) {
     // CRC2 config 1 feature table (`single_1`, close to Table 1(a)).
     auto add_a = [this](view kind, int a, int b, int e, int w, bool mix) {
@@ -200,7 +266,7 @@ void mpppb::describe_features()
         entries = mix ? 256 : (1 << std::max(0, e - b));
       else if (kind != view::pc && kind != view::address)
         entries = mix ? 256 : 2;
-      plan_.push_back(feature{kind, a, b, e, w, mix, 0, static_cast<std::uint16_t>(entries)});
+      plan_.push_back(feature{kind, a, b, e, w, mix, static_cast<std::uint8_t>(mix ? 1 : 0), 0, static_cast<std::uint16_t>(entries)});
     };
     add_a(view::offset, 15, 1, 6, 0, true);
     add_a(view::pc, 7, 14, 43, 11, false);
@@ -237,7 +303,7 @@ void mpppb::describe_features()
     else
       bits = width;
 
-    plan_.push_back(feature{kind, a, b, e, w, mix, static_cast<std::uint8_t>(bits),
+    plan_.push_back(feature{kind, a, b, e, w, mix, static_cast<std::uint8_t>(mix ? 1 : 0), static_cast<std::uint8_t>(bits),
                             static_cast<std::uint16_t>(std::uint16_t{1} << bits)});
   };
 
@@ -265,8 +331,13 @@ std::vector<std::int8_t>& mpppb::weights(std::size_t cpu, int slot)
 }
 
 std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, std::uint64_t ip,
-                             std::uint64_t addr, std::uint64_t block, bool insert)
+                             std::uint64_t addr, std::uint64_t block, bool insert, access_type type)
 {
+  // Disambiguate zero-IP prefetches by 4KB page context under TA-MPPPB
+  // so they do not alias into a single weight [0].
+  const std::uint64_t eff_ip =
+      (improve_ && type == access_type::PREFETCH && ip == 0) ? (0x9e3779b9ULL ^ (block >> 6U)) : ip;
+
   if (direct_index_) {
     // Author-code indexing: direct bit extraction (e is exclusive), XOR PC,
     // then modulo the table size. No XOR folding.
@@ -275,7 +346,7 @@ std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, st
     const std::uint64_t mask = (width <= 0) ? 0 : ((width >= 64) ? ~std::uint64_t{0} : ((std::uint64_t{1} << width) - 1));
     switch (f.kind) {
     case view::pc: {
-      std::uint64_t chosen = ip;
+      std::uint64_t chosen = eff_ip;
       if (f.w > 0) {
         const auto depth = static_cast<std::uint64_t>(f.w);
         chosen = (st.stamps >= depth) ? st.pc_ring[(st.stamps - depth) % st.pc_ring.size()] : 0;
@@ -302,8 +373,10 @@ std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, st
       raw = miss_last_.at(static_cast<std::size_t>(set)) ? 1 : 0;
       break;
     }
-    if (f.mix_pc)
-      raw ^= ip;
+    if (f.x_mask & 1U)
+      raw ^= eff_ip;
+    if ((f.x_mask & 2U) != 0 && type == access_type::PREFETCH)
+      raw ^= 2ULL;
     return static_cast<std::uint8_t>(raw % f.entries);
   }
 
@@ -311,40 +384,40 @@ std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, st
 
   switch (f.kind) {
   case view::pc: {
-    std::uint64_t chosen = ip;
+    std::uint64_t chosen = eff_ip;
     if (f.w > 0) {
       const auto depth = static_cast<std::uint64_t>(f.w);
       chosen = (st.stamps >= depth) ? st.pc_ring[(st.stamps - depth) % st.pc_ring.size()] : 0;
     }
     raw = slice_bits(chosen, f.b, f.e);
     if (f.mix_pc)
-      raw ^= ip;
+      raw ^= eff_ip;
     break;
   }
   case view::address:
   case view::offset:
     raw = slice_bits(addr, f.b, f.e);
     if (f.mix_pc)
-      raw ^= ip;
+      raw ^= eff_ip;
     break;
   case view::bias:
     // A global counter (X=0) or a PC-indexed predictor (X=1).
-    raw = f.mix_pc ? ip : 0;
+    raw = f.mix_pc ? eff_ip : 0;
     break;
   case view::burst:
     raw = (block == mru_block_.at(static_cast<std::size_t>(set))) ? 1 : 0;
     if (f.mix_pc)
-      raw ^= ip;
+      raw ^= eff_ip;
     break;
   case view::insert:
     raw = insert ? 1 : 0;
     if (f.mix_pc)
-      raw ^= ip;
+      raw ^= eff_ip;
     break;
   case view::lastmiss:
     raw = miss_last_.at(static_cast<std::size_t>(set)) ? 1 : 0;
     if (f.mix_pc)
-      raw ^= ip;
+      raw ^= eff_ip;
     break;
   }
 
@@ -352,11 +425,12 @@ std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, st
 }
 
 std::int16_t mpppb::predict(core_view& st, long set, std::uint64_t ip, std::uint64_t addr,
-                            std::uint64_t block, bool insert, std::array<std::uint8_t, kFeatureCount>& key)
+                            std::uint64_t block, bool insert, access_type type,
+                            std::array<std::uint8_t, kFeatureCount>& key)
 {
   int total = 0;
   for (int f = 0; f < kFeatureCount; ++f) {
-    key[static_cast<std::size_t>(f)] = index_of(plan_[f], st, set, ip, addr, block, insert);
+    key[static_cast<std::size_t>(f)] = index_of(plan_[f], st, set, ip, addr, block, insert, type);
     total += st.table[static_cast<std::size_t>(f)][key[static_cast<std::size_t>(f)]];
   }
   return static_cast<std::int16_t>(std::clamp(total, -256, 255));
@@ -419,7 +493,7 @@ void mpppb::learn_demote(core_view& st, const item& old, int new_position)
 }
 
 void mpppb::visit_sampler(core_view& st, long set, std::uint16_t ptag, std::int16_t score,
-                          const std::array<std::uint8_t, kFeatureCount>& key)
+                          const std::array<std::uint8_t, kFeatureCount>& key, access_type type)
 {
   auto& s = st.sampler.at(static_cast<std::size_t>(set / kSampleStride));
 
@@ -438,6 +512,12 @@ void mpppb::visit_sampler(core_view& st, long set, std::uint16_t ptag, std::int1
       if (moved.used)
         learn_demote(st, moved, q);
       s.line[static_cast<std::size_t>(q)] = moved;
+    }
+    if (improve_ && type == access_type::WRITE) {
+      // Preserve creator LOAD/RFO feature key & score at MRU instead of overwriting
+      // with a zero-IP WRITE key.
+      s.line[0] = previous;
+      return;
     }
   } else {
     for (int q = static_cast<int>(s.line.size()) - 1; q > 0; --q) {
@@ -540,13 +620,18 @@ long mpppb::find_victim(uint32_t, uint64_t, long set, const champsim::cache_bloc
                         champsim::address full_addr, access_type type)
 {
   if (use_mdpp_ && ways_ == kMdppWays) {
-    if (type != access_type::WRITE) {
+    const bool allow_bypass = (type != access_type::WRITE) && (!improve_ || type != access_type::TRANSLATION);
+    if (allow_bypass) {
       const auto block = full_addr.to<std::uint64_t>() >> 6U;
       bool found = false;
       const auto score = peek_score(set, block, found);
       if (found && score >= bypass_limit(set)) {
         drop_pending(set, block);
         ++g_probe.bypassed;
+        if (type == access_type::PREFETCH)
+          ++g_probe.pref_bypass;
+        else
+          ++g_probe.demand_bypass;
         return ways_; // skip allocation (true bypass)
       }
     }
@@ -578,9 +663,18 @@ void mpppb::replacement_cache_fill(uint32_t, long set, long way, champsim::addre
     if (way >= ways_)
       return; // bypass: no allocation
     const auto block = full_addr.to<std::uint64_t>() >> 6U;
+    if (improve_ && type == access_type::TRANSLATION) {
+      drop_pending(set, block);
+      ++g_probe.fills;
+      ++g_probe.trans_fills;
+      plru_set(set, way, 0);
+      return;
+    }
     bool found = false;
     const auto score = take_score(set, block, found);
     ++g_probe.fills;
+    if (type == access_type::WRITE)
+      ++g_probe.write_fills;
     if (found)
       ++g_probe.matched;
     else
@@ -594,7 +688,6 @@ void mpppb::replacement_cache_fill(uint32_t, long set, long way, champsim::addre
     else if (score >= plv_[0][0])
       newidx = plv_[0][1];
     plru_set(set, way, newidx);
-    (void)type;
     return;
   }
 
@@ -641,12 +734,27 @@ void mpppb::replacement_cache_fill(uint32_t, long set, long way, champsim::addre
 }
 
 void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way, champsim::address full_addr,
-                                     champsim::address ip, champsim::address, access_type, uint8_t hit)
+                                     champsim::address ip, champsim::address, access_type type, uint8_t hit)
 {
   const auto raw = full_addr.to<std::uint64_t>();
   const auto block = raw >> 6U;
   const auto pc = ip.to<std::uint64_t>();
   const bool insertion = (hit == 0);
+
+  if (ways_ == kMdppWays && type == access_type::TRANSLATION) {
+    ++g_probe.trans_access;
+    if (!insertion)
+      ++g_probe.trans_hit;
+    if (improve_) {
+      if (!insertion && way < ways_) {
+        const int cur = plru_index(set, way);
+        plru_set(set, way, kVecMdpp[cur]);
+        ++g_probe.promoted;
+      }
+      miss_last_.at(static_cast<std::size_t>(set)) = insertion ? 1 : 0;
+      return;
+    }
+  }
 
   auto& core = cores_.at(triggering_cpu);
   std::array<std::uint8_t, kFeatureCount> key{};
@@ -660,10 +768,10 @@ void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way
     }
   }
 
-  const std::int16_t score = predict(core, set, pc, raw, block, insertion, key);
+  const std::int16_t score = predict(core, set, pc, raw, block, insertion, type, key);
 
   if (set % kSampleStride == 0)
-    visit_sampler(core, set, partial_tag(block), score, key);
+    visit_sampler(core, set, partial_tag(block), score, key, type);
 
   if (insertion) {
     if (author_ && bypass_duel_) {
@@ -696,7 +804,9 @@ void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way
     }
   }
 
-  core.pc_ring[core.stamps % core.pc_ring.size()] = pc;
-  ++core.stamps;
+  if (!improve_ || pc != 0) {
+    core.pc_ring[core.stamps % core.pc_ring.size()] = pc;
+    ++core.stamps;
+  }
   miss_last_.at(static_cast<std::size_t>(set)) = insertion ? 1 : 0;
 }
