@@ -13,15 +13,22 @@ namespace
 {
 struct probe_counters {
   long fills = 0;
+  long demand_fills = 0;
+  long pref_fills = 0;
   long matched = 0;
   long unmatched = 0;
   long bypassed = 0;
   long demand_bypass = 0;
   long pref_bypass = 0;
+  long trans_bypass = 0;
   long write_fills = 0;
   long trans_access = 0;
   long trans_hit = 0;
   long trans_fills = 0;
+  long write_samp_hit = 0;
+  long write_samp_miss = 0;
+  long pref_samp_hit = 0;
+  long pref_samp_miss = 0;
   long promoted = 0;
   long kept = 0;
   std::array<long, 6> bucket{};
@@ -160,10 +167,146 @@ mpppb::mpppb(CACHE* cache)
       plv_[1][1] = 12;
       plv_[2][0] = 44;
       plv_[2][1] = 15;
+    } else if (std::strcmp(profile, "ta_mpppb") == 0 || std::strcmp(profile, "ta_mpppb_np") == 0) {
+      // TA-MPPPB v3: zero-extra-SRAM type-aware arbitration & zero-PC shielding.
+      const bool is_np = (std::strcmp(profile, "ta_mpppb_np") == 0);
+      author_ = true;
+      author2_ = !is_np;
+      use_mdpp_ = true;
+      direct_index_ = true;
+      author_train_ = true;
+      bypass_duel_ = true;
+      train_threshold_ = 128;
+      theta_ = 109;
+      theta2_ = 135;
+      promotion_threshold_ = is_np ? 82 : 178;
+      bypass_dt1_ = is_np ? 30 : 42;
+      bypass_dt2_ = is_np ? 150 : 256;
+      leaders1_ = 32;
+      leaders2_ = 64;
+      init_weight_ = 1;
+      plv_[0][0] = -15;
+      plv_[0][1] = 0;
+      plv_[1][0] = 35;
+      plv_[1][1] = 12;
+      plv_[2][0] = 44;
+      plv_[2][1] = is_np ? 15 : 14;
+      ab_write_nopc_ = true;
+      ab_write_nosamp_ = !is_np;
+      ab_write_preserve_ = true;
+      ab_write_duel_ = true;
+      ab_write_pos_ = 8;
+      ab_write_pos2_ = 15;
+      ab_write_hit_promote_ = 1;
+      ab_trans_nobp_ = true;
+      ab_trans_nopc_ = true;
+      ab_trans_nosamp_ = true;
+      ab_trans_duel_ = false;
+      ab_trans_pos_ = 8;
+      ab_trans_promote_ = true;
+      ab_pref_nobp_ = true;
+      ab_pref_nopc_ = true;
+      ab_pref_nosamp_ = true;
+      ab_pref_duel_ = !is_np;
+      ab_pref_pos_ = 8;
+      ab_pref_pos2_ = 15;
+      ab_pref_hit_promote_ = 1;
+      ab_demand_hit_promote_ = is_np ? 0 : 1;
+      ab_duel_dem_w_ = 1;
+      ab_duel_own_w_ = 0;
+      ab_mask_zero_pc_ = true;
     }
   }
   if (const char* imp = std::getenv("MPPPB_IMPROVE"); imp != nullptr && imp[0] != '\0' && std::strcmp(imp, "0") != 0)
     improve_ = true;
+  if (const char* abl = std::getenv("MPPPB_ABLATE"); abl != nullptr && abl[0] != '\0') {
+    const auto has_tok = [abl](const char* tok) {
+      const std::size_t n = std::strlen(tok);
+      const char* p = abl;
+      while ((p = std::strstr(p, tok)) != nullptr) {
+        const bool left_ok = (p == abl || p[-1] == ',' || p[-1] == ' ');
+        const bool right_ok = (p[n] == '\0' || p[n] == ',' || p[n] == ' ');
+        if (left_ok && right_ok)
+          return true;
+        p += n;
+      }
+      return false;
+    };
+    if (has_tok("write_nopc"))
+      ab_write_nopc_ = true;
+    if (has_tok("write_preserve"))
+      ab_write_preserve_ = true;
+    if (has_tok("write_nosamp"))
+      ab_write_nosamp_ = true;
+    if (has_tok("write_iso")) {
+      ab_write_nopc_ = true;
+      ab_write_nosamp_ = true;
+    }
+    if (has_tok("trans_nobp")) {
+      ab_trans_nobp_ = true;
+      ab_trans_nopc_ = true;
+      ab_trans_nosamp_ = true;
+    }
+    if (has_tok("trans_mru")) {
+      ab_trans_nobp_ = true;
+      ab_trans_nopc_ = true;
+      ab_trans_nosamp_ = true;
+      ab_trans_pos_ = 0;
+      ab_trans_promote_ = true;
+    }
+    if (has_tok("pref_nobp"))
+      ab_pref_nobp_ = true;
+    if (has_tok("pref_nopc"))
+      ab_pref_nopc_ = true;
+    if (has_tok("pref_nosamp"))
+      ab_pref_nosamp_ = true;
+    if (has_tok("pref_nohash"))
+      ab_pref_nohash_ = true;
+    if (has_tok("pref_iso")) {
+      ab_pref_nobp_ = true;
+      ab_pref_nopc_ = true;
+      ab_pref_nosamp_ = true;
+    }
+    if (has_tok("mask_zero_pc"))
+      ab_mask_zero_pc_ = true;
+    if (has_tok("write_hit_promote"))
+      ab_write_hit_promote_ = 1;
+    if (has_tok("write_hit_mru"))
+      ab_write_hit_promote_ = 2;
+    if (has_tok("pref_hit_promote"))
+      ab_pref_hit_promote_ = 1;
+    if (has_tok("pref_hit_mru"))
+      ab_pref_hit_promote_ = 2;
+    if (has_tok("demand_hit_promote"))
+      ab_demand_hit_promote_ = 1;
+    if (has_tok("demand_hit_mru"))
+      ab_demand_hit_promote_ = 2;
+    if (has_tok("write_duel"))
+      ab_write_duel_ = true;
+    if (has_tok("pref_duel"))
+      ab_pref_duel_ = true;
+    if (has_tok("trans_duel"))
+      ab_trans_duel_ = true;
+  }
+  read_env("MPPPB_TRANS_POS", ab_trans_pos_);
+  read_env("MPPPB_TRANS_POS2", ab_trans_pos2_);
+  read_env("MPPPB_PREF_POS", ab_pref_pos_);
+  read_env("MPPPB_PREF_POS2", ab_pref_pos2_);
+  read_env("MPPPB_WRITE_POS", ab_write_pos_);
+  read_env("MPPPB_WRITE_POS2", ab_write_pos2_);
+  read_env("MPPPB_WRITE_HIT_PROMOTE", ab_write_hit_promote_);
+  read_env("MPPPB_PREF_HIT_PROMOTE", ab_pref_hit_promote_);
+  read_env("MPPPB_DEMAND_HIT_PROMOTE", ab_demand_hit_promote_);
+  if (const char* wd = std::getenv("MPPPB_WRITE_DUEL"); wd != nullptr)
+    ab_write_duel_ = std::strcmp(wd, "0") != 0;
+  if (const char* pd = std::getenv("MPPPB_PREF_DUEL"); pd != nullptr)
+    ab_pref_duel_ = std::strcmp(pd, "0") != 0;
+  if (const char* td = std::getenv("MPPPB_TRANS_DUEL"); td != nullptr)
+    ab_trans_duel_ = std::strcmp(td, "0") != 0;
+  if (const char* tp = std::getenv("MPPPB_TRANS_PROMOTE"); tp != nullptr)
+    ab_trans_promote_ = std::strcmp(tp, "0") != 0;
+  read_env("MPPPB_DUEL_DEM_W", ab_duel_dem_w_);
+  read_env("MPPPB_DUEL_OWN_W", ab_duel_own_w_);
   if (const char* base = std::getenv("MPPPB_BASE"); base != nullptr && std::strcmp(base, "mdpp") == 0)
     use_mdpp_ = true;
   read_env("MPPPB_TRAIN_THRESHOLD", train_threshold_);
@@ -224,6 +367,11 @@ mpppb::~mpppb()
                  "mpppb_ta: demand_bypass=%ld pref_bypass=%ld write_fills=%ld trans_access=%ld trans_hit=%ld trans_fills=%ld\n",
                  g_probe.demand_bypass, g_probe.pref_bypass, g_probe.write_fills, g_probe.trans_access, g_probe.trans_hit,
                  g_probe.trans_fills);
+    std::fprintf(stderr,
+                 "mpppb_detail: demand_fills=%ld pref_fills=%ld trans_bypass=%ld write_samp_hit=%ld write_samp_miss=%ld "
+                 "pref_samp_hit=%ld pref_samp_miss=%ld psel=%d wsel=%d pfsel=%d tsel=%d\n",
+                 g_probe.demand_fills, g_probe.pref_fills, g_probe.trans_bypass, g_probe.write_samp_hit,
+                 g_probe.write_samp_miss, g_probe.pref_samp_hit, g_probe.pref_samp_miss, psel_, wsel_, pfsel_, tsel_);
   }
 }
 
@@ -333,10 +481,7 @@ std::vector<std::int8_t>& mpppb::weights(std::size_t cpu, int slot)
 std::uint8_t mpppb::index_of(const feature& f, const core_view& st, long set, std::uint64_t ip,
                              std::uint64_t addr, std::uint64_t block, bool insert, access_type type)
 {
-  // Disambiguate zero-IP prefetches by 4KB page context under TA-MPPPB
-  // so they do not alias into a single weight [0].
-  const std::uint64_t eff_ip =
-      (improve_ && type == access_type::PREFETCH && ip == 0) ? (0x9e3779b9ULL ^ (block >> 6U)) : ip;
+  const std::uint64_t eff_ip = effective_ip(ip, block, type);
 
   if (direct_index_) {
     // Author-code indexing: direct bit extraction (e is exclusive), XOR PC,
@@ -428,9 +573,16 @@ std::int16_t mpppb::predict(core_view& st, long set, std::uint64_t ip, std::uint
                             std::uint64_t block, bool insert, access_type type,
                             std::array<std::uint8_t, kFeatureCount>& key)
 {
+  const std::uint64_t eff_ip = effective_ip(ip, block, type);
   int total = 0;
   for (int f = 0; f < kFeatureCount; ++f) {
-    key[static_cast<std::size_t>(f)] = index_of(plan_[f], st, set, ip, addr, block, insert, type);
+    const auto& spec = plan_[static_cast<std::size_t>(f)];
+    const bool uses_cur_pc = (spec.kind == view::pc && spec.w == 0) || spec.mix_pc || ((spec.x_mask & 1U) != 0);
+    if (ab_mask_zero_pc_ && eff_ip == 0 && uses_cur_pc) {
+      key[static_cast<std::size_t>(f)] = 0;
+      continue;
+    }
+    key[static_cast<std::size_t>(f)] = index_of(spec, st, set, ip, addr, block, insert, type);
     total += st.table[static_cast<std::size_t>(f)][key[static_cast<std::size_t>(f)]];
   }
   return static_cast<std::int16_t>(std::clamp(total, -256, 255));
@@ -495,6 +647,11 @@ void mpppb::learn_demote(core_view& st, const item& old, int new_position)
 void mpppb::visit_sampler(core_view& st, long set, std::uint16_t ptag, std::int16_t score,
                           const std::array<std::uint8_t, kFeatureCount>& key, access_type type)
 {
+  if ((ab_write_nosamp_ && type == access_type::WRITE) ||
+      (ab_trans_nosamp_ && type == access_type::TRANSLATION) ||
+      (type == access_type::PREFETCH && is_pref_isolated(set)))
+    return;
+
   auto& s = st.sampler.at(static_cast<std::size_t>(set / kSampleStride));
 
   int hit = -1;
@@ -503,6 +660,18 @@ void mpppb::visit_sampler(core_view& st, long set, std::uint16_t ptag, std::int1
       hit = i;
       break;
     }
+
+  if (type == access_type::WRITE) {
+    if (hit >= 0)
+      ++g_probe.write_samp_hit;
+    else
+      ++g_probe.write_samp_miss;
+  } else if (type == access_type::PREFETCH) {
+    if (hit >= 0)
+      ++g_probe.pref_samp_hit;
+    else
+      ++g_probe.pref_samp_miss;
+  }
 
   if (hit >= 0) {
     const item previous = s.line[static_cast<std::size_t>(hit)];
@@ -513,7 +682,7 @@ void mpppb::visit_sampler(core_view& st, long set, std::uint16_t ptag, std::int1
         learn_demote(st, moved, q);
       s.line[static_cast<std::size_t>(q)] = moved;
     }
-    if (improve_ && type == access_type::WRITE) {
+    if ((improve_ || ab_write_preserve_) && type == access_type::WRITE) {
       // Preserve creator LOAD/RFO feature key & score at MRU instead of overwriting
       // with a zero-IP WRITE key.
       s.line[0] = previous;
@@ -616,11 +785,89 @@ int mpppb::bypass_limit(long set) const
   return (psel_ >= 0) ? bypass_dt2_ : bypass_dt1_;
 }
 
+void mpppb::promote_mdpp_way(long set, long way, int mode, std::int16_t score)
+{
+  if (way >= ways_) {
+    ++g_probe.kept;
+    return;
+  }
+  const bool allow = (mode > 0) || (score <= promotion_threshold_);
+  if (allow) {
+    const int next_idx = (mode >= 2) ? 0 : kVecMdpp[plru_index(set, way)];
+    plru_set(set, way, next_idx);
+    ++g_probe.promoted;
+  } else {
+    ++g_probe.kept;
+  }
+}
+
+static void update_duel_sel(long set, int leaders2, long slot1, long slot2, int weight, int& sel)
+{
+  if (weight <= 0 || set < leaders2)
+    return;
+  const long slot = set & 63L;
+  if (slot == slot1)
+    sel = std::max(-512, sel - weight);
+  else if (slot == slot2)
+    sel = std::min(511, sel + weight);
+}
+
+void mpppb::update_type_duels(long set, access_type type)
+{
+  const bool is_dem = (type == access_type::LOAD || type == access_type::RFO);
+  const auto weight_for = [this, is_dem, type](access_type own) {
+    return is_dem ? ab_duel_dem_w_ : (type == own ? ab_duel_own_w_ : 0);
+  };
+  if (ab_write_duel_)
+    update_duel_sel(set, leaders2_, 17L, 49L, weight_for(access_type::WRITE), wsel_);
+  if (ab_pref_duel_)
+    update_duel_sel(set, leaders2_, 18L, 50L, weight_for(access_type::PREFETCH), pfsel_);
+  if (ab_trans_duel_)
+    update_duel_sel(set, leaders2_, 19L, 51L, weight_for(access_type::TRANSLATION), tsel_);
+}
+
+// Return explicit PLRU insertion index [0, 15], or -1 for score-guided placement.
+int mpppb::duel_fill_pos(long set, int pos1, bool duel, int pos2, long slot1, long slot2, int sel) const
+{
+  int pos = pos1;
+  if (duel) {
+    const long slot = (set >= leaders2_) ? (set & 63L) : -1L;
+    if (slot == slot1)
+      pos = pos1;
+    else if (slot == slot2)
+      pos = pos2;
+    else
+      pos = (sel >= 0) ? pos1 : pos2;
+  }
+  return (pos < 0) ? -1 : std::clamp(pos, 0, kMdppWays - 1);
+}
+
+std::uint64_t mpppb::effective_ip(std::uint64_t ip, std::uint64_t block, access_type type) const
+{
+  // Disambiguate zero-IP prefetches by 4KB page context under adaptive prefetch handling.
+  const bool hash_pref = improve_ || (ab_pref_duel_ && ab_pref_pos_ < 0);
+  if (hash_pref && !ab_pref_nohash_ && type == access_type::PREFETCH && ip == 0)
+    return 0x9e3779b9ULL ^ (block >> 6U);
+  return ip;
+}
+
+bool mpppb::is_pref_isolated(long set) const
+{
+  if (ab_pref_nosamp_)
+    return true;
+  return ab_pref_duel_ && (duel_fill_pos(set, ab_pref_pos_, ab_pref_duel_, ab_pref_pos2_, 18L, 50L, pfsel_) >= 0);
+}
+
 long mpppb::find_victim(uint32_t, uint64_t, long set, const champsim::cache_block*, champsim::address,
                         champsim::address full_addr, access_type type)
 {
   if (use_mdpp_ && ways_ == kMdppWays) {
-    const bool allow_bypass = (type != access_type::WRITE) && (!improve_ || type != access_type::TRANSLATION);
+    const int pref_pos = (type == access_type::PREFETCH)
+                             ? duel_fill_pos(set, ab_pref_pos_, ab_pref_duel_, ab_pref_pos2_, 18L, 50L, pfsel_)
+                             : -1;
+    const bool allow_bypass = (type != access_type::WRITE) &&
+                              (!(improve_ || ab_trans_nobp_) || type != access_type::TRANSLATION) &&
+                              (type != access_type::PREFETCH || (!ab_pref_nobp_ && pref_pos < 0));
     if (allow_bypass) {
       const auto block = full_addr.to<std::uint64_t>() >> 6U;
       bool found = false;
@@ -630,6 +877,8 @@ long mpppb::find_victim(uint32_t, uint64_t, long set, const champsim::cache_bloc
         ++g_probe.bypassed;
         if (type == access_type::PREFETCH)
           ++g_probe.pref_bypass;
+        else if (type == access_type::TRANSLATION)
+          ++g_probe.trans_bypass;
         else
           ++g_probe.demand_bypass;
         return ways_; // skip allocation (true bypass)
@@ -663,11 +912,13 @@ void mpppb::replacement_cache_fill(uint32_t, long set, long way, champsim::addre
     if (way >= ways_)
       return; // bypass: no allocation
     const auto block = full_addr.to<std::uint64_t>() >> 6U;
-    if (improve_ && type == access_type::TRANSLATION) {
+    if (type == access_type::TRANSLATION && (improve_ || ab_trans_pos_ >= 0)) {
+      const int base_pos = (ab_trans_pos_ >= 0) ? ab_trans_pos_ : 0;
+      const int pos = duel_fill_pos(set, base_pos, ab_trans_duel_, ab_trans_pos2_, 19L, 51L, tsel_);
       drop_pending(set, block);
       ++g_probe.fills;
       ++g_probe.trans_fills;
-      plru_set(set, way, 0);
+      plru_set(set, way, std::max(0, pos));
       return;
     }
     bool found = false;
@@ -675,18 +926,36 @@ void mpppb::replacement_cache_fill(uint32_t, long set, long way, champsim::addre
     ++g_probe.fills;
     if (type == access_type::WRITE)
       ++g_probe.write_fills;
+    else if (type == access_type::PREFETCH)
+      ++g_probe.pref_fills;
+    else if (type == access_type::TRANSLATION)
+      ++g_probe.trans_fills;
+    else
+      ++g_probe.demand_fills;
     if (found)
       ++g_probe.matched;
     else
       ++g_probe.unmatched;
     probe_bucket(score);
     int newidx = 0;
-    if (score >= plv_[2][0])
-      newidx = plv_[2][1];
-    else if (score >= plv_[1][0])
-      newidx = plv_[1][1];
-    else if (score >= plv_[0][0])
-      newidx = plv_[0][1];
+    const int pref_pos = (type == access_type::PREFETCH)
+                             ? duel_fill_pos(set, ab_pref_pos_, ab_pref_duel_, ab_pref_pos2_, 18L, 50L, pfsel_)
+                             : -1;
+    const int write_pos = (type == access_type::WRITE)
+                              ? duel_fill_pos(set, ab_write_pos_, ab_write_duel_, ab_write_pos2_, 17L, 49L, wsel_)
+                              : -1;
+    if (pref_pos >= 0) {
+      newidx = pref_pos;
+    } else if (write_pos >= 0) {
+      newidx = write_pos;
+    } else {
+      if (score >= plv_[2][0])
+        newidx = plv_[2][1];
+      else if (score >= plv_[1][0])
+        newidx = plv_[1][1];
+      else if (score >= plv_[0][0])
+        newidx = plv_[0][1];
+    }
     plru_set(set, way, newidx);
     return;
   }
@@ -745,11 +1014,39 @@ void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way
     ++g_probe.trans_access;
     if (!insertion)
       ++g_probe.trans_hit;
-    if (improve_) {
+    if (insertion)
+      update_type_duels(set, type);
+    const int base_pos = (ab_trans_pos_ >= 0) ? ab_trans_pos_ : 0;
+    const bool duel_allows_prom = !ab_trans_duel_ ||
+                                  (duel_fill_pos(set, base_pos, true, ab_trans_pos2_, 19L, 51L, tsel_) < 15);
+    if (improve_ || ab_trans_promote_) {
       if (!insertion && way < ways_) {
+        if (duel_allows_prom) {
+          const int cur = plru_index(set, way);
+          plru_set(set, way, kVecMdpp[cur]);
+          ++g_probe.promoted;
+        } else {
+          ++g_probe.kept;
+        }
+      }
+      miss_last_.at(static_cast<std::size_t>(set)) = insertion ? 1 : 0;
+      return;
+    }
+    if (ab_trans_nobp_) {
+      auto& core_t = cores_.at(triggering_cpu);
+      std::array<std::uint8_t, kFeatureCount> tkey{};
+      const std::int16_t tscore = predict(core_t, set, pc, raw, block, insertion, type, tkey);
+      if (insertion) {
+        auto& q = in_flight_.at(static_cast<std::size_t>(set));
+        if (q.size() >= kPendingCap)
+          q.pop_front();
+        q.push_back(pending_hit{block, tscore});
+      } else if (duel_allows_prom && way < ways_ && tscore <= promotion_threshold_) {
         const int cur = plru_index(set, way);
         plru_set(set, way, kVecMdpp[cur]);
         ++g_probe.promoted;
+      } else {
+        ++g_probe.kept;
       }
       miss_last_.at(static_cast<std::size_t>(set)) = insertion ? 1 : 0;
       return;
@@ -780,18 +1077,18 @@ void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way
       else if (set < leaders2_)
         psel_ = std::max(-1023, psel_ - 1);
     }
+    update_type_duels(set, type);
     auto& q = in_flight_.at(static_cast<std::size_t>(set));
     if (q.size() >= kPendingCap)
       q.pop_front();
     q.push_back(pending_hit{block, score});
   } else if (author_ && ways_ == kMdppWays) {
-    if (way < ways_ && score <= promotion_threshold_) {
-      const int cur = plru_index(set, way);
-      plru_set(set, way, kVecMdpp[cur]);
-      ++g_probe.promoted;
-    } else {
-      ++g_probe.kept;
-    }
+    int hit_mode = ab_demand_hit_promote_;
+    if (type == access_type::WRITE)
+      hit_mode = ab_write_hit_promote_;
+    else if (type == access_type::PREFETCH)
+      hit_mode = ab_pref_hit_promote_;
+    promote_mdpp_way(set, way, hit_mode, score);
   } else {
     const auto slot = static_cast<std::size_t>(set) * static_cast<std::size_t>(ways_) + static_cast<std::size_t>(way);
     first_victim_.at(slot) = 0; // a reuse disproves dead-on-arrival
@@ -804,7 +1101,11 @@ void mpppb::update_replacement_state(uint32_t triggering_cpu, long set, long way
     }
   }
 
-  if (!improve_ || pc != 0) {
+  const bool skip_pc_ring = ((improve_ || ab_mask_zero_pc_) && pc == 0) ||
+                            (ab_write_nopc_ && type == access_type::WRITE) ||
+                            (ab_trans_nopc_ && type == access_type::TRANSLATION) ||
+                            ((ab_pref_nopc_ || ab_pref_duel_) && type == access_type::PREFETCH);
+  if (!skip_pc_ring) {
     core.pc_ring[core.stamps % core.pc_ring.size()] = pc;
     ++core.stamps;
   }

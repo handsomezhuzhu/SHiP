@@ -118,6 +118,36 @@ private:
   bool author_ = false;        // MDPP + author training + author feature set
   bool author2_ = false;       // CRC2 config 2: single-core MDPP with prefetcher
   bool improve_ = false;       // TA-MPPPB: translation/access-aware reuse prediction & protection
+  // Granular Point 1 causal ablation & Point 2 TA-MPPPB v3 controls (off by default):
+  bool ab_write_nopc_ = false;
+  bool ab_write_nosamp_ = false;
+  bool ab_write_preserve_ = false;
+  bool ab_trans_nobp_ = false;
+  bool ab_trans_nopc_ = false;
+  bool ab_trans_nosamp_ = false;
+  int ab_trans_pos_ = -1;      // >=0 overrides TRANSLATION fill PLRU index (e.g. 0, 6, 8)
+  bool ab_trans_promote_ = false;
+  bool ab_pref_nobp_ = false;
+  bool ab_pref_nopc_ = false;
+  bool ab_pref_nosamp_ = false;
+  bool ab_pref_nohash_ = false; // disable 0x9e3779b9^(block>>6) synthetic PC on PREFETCH
+  int ab_pref_pos_ = -1;       // >=0 overrides PREFETCH fill PLRU index (instead of score)
+  bool ab_mask_zero_pc_ = false; // ignore PC-only / XOR-PC features when ip==0
+  int ab_write_pos_ = -1;      // >=0 overrides WRITE fill PLRU index
+  int ab_write_hit_promote_ = 0; // 0=score-gated, 1=unconditional kVecMdpp, 2=unconditional MRU(0)
+  int ab_pref_hit_promote_ = 0;  // 0=score-gated, 1=unconditional kVecMdpp, 2=unconditional MRU(0)
+  int ab_demand_hit_promote_ = 0;// 0=score-gated, 1=unconditional kVecMdpp, 2=unconditional MRU(0)
+  bool ab_write_duel_ = false;   // set-duel WRITE insertion between ab_write_pos_ and ab_write_pos2_
+  int ab_write_pos2_ = 15;       // secondary WRITE fill PLRU index in set-dueling
+  int wsel_ = 0;                 // 10-bit saturating duel counter for WRITE placement
+  bool ab_pref_duel_ = false;    // set-duel PREFETCH insertion between ab_pref_pos_ and ab_pref_pos2_
+  int ab_pref_pos2_ = 15;        // secondary PREFETCH fill PLRU index in set-dueling
+  int pfsel_ = 0;                // 10-bit saturating duel counter for PREFETCH placement
+  bool ab_trans_duel_ = false;   // set-duel TRANSLATION insertion between ab_trans_pos_ and ab_trans_pos2_
+  int ab_trans_pos2_ = 15;       // secondary TRANSLATION fill PLRU index in set-dueling
+  int tsel_ = 0;                 // 10-bit saturating duel counter for TRANSLATION placement
+  int ab_duel_dem_w_ = 1;        // weight per LOAD/RFO miss in type set-dueling
+  int ab_duel_own_w_ = 0;        // weight per own-class miss in type set-dueling
   bool use_mdpp_ = false;      // tree-based pseudo-LRU base
   bool direct_index_ = false;  // direct bit extraction + modulo (author code)
   bool author_train_ = false;  // init weight 1, threshold 128, dead zone
@@ -146,6 +176,11 @@ private:
   std::int16_t peek_score(long set, std::uint64_t block, bool& found) const;
   void drop_pending(long set, std::uint64_t block);
   int bypass_limit(long set) const;
+  void promote_mdpp_way(long set, long way, int mode, std::int16_t score);
+  int duel_fill_pos(long set, int pos1, bool duel, int pos2, long slot1, long slot2, int sel) const;
+  std::uint64_t effective_ip(std::uint64_t ip, std::uint64_t block, access_type type) const;
+  bool is_pref_isolated(long set) const;
+  void update_type_duels(long set, access_type type);
 
   void describe_features();
   std::vector<std::int8_t>& weights(std::size_t cpu, int feature);

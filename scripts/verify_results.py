@@ -30,10 +30,10 @@ BAD_WORDS = ("panic", "deadlock", "error", "abort", "out_of_range")
 
 def _parse_elapsed(text: str) -> float:
     """Parse either plain numeric seconds or key-value elapsed_sec=<float>."""
-    for line in text.splitlines():
-        if line.startswith("elapsed_sec="):
+    for tok in text.split():
+        if tok.startswith("elapsed_sec="):
             try:
-                return float(line.split("=", 1)[1].strip())
+                return float(tok.split("=", 1)[1].strip())
             except ValueError:
                 return 0.0
     try:
