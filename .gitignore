@@ -1,8 +1,7 @@
 # env / 本地工具链（不入库）
 env/
 
-# 独立 TA-MPPPB 仓库目录
-TA-MPPPB/
+# TA-MPPPB 以 git submodule 形式纳入（见 .gitmodules）
 
 # 模拟器与构建产物
 build/
