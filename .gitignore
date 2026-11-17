@@ -12,14 +12,14 @@ sim/llc_sim
 *.d
 *.a
 
-# Benchmark trace（体积大，用 scripts/get_traces.sh 重新下载）
+# Benchmark trace（体积大，用 scripts/get_traces.sh / scripts/get_ext_traces.py 重新下载）
 traces/
+traces_new/
 
 # 论文 PDF（版权原因不入库，用 scripts/fetch_papers.sh 重新下载）
 papers/pdf/
 
-# 运行产生的原始输出
-results/raw/
+# 运行产生的原始输出（实验数据随仓库入库，仅忽略顶层临时日志）
 results/*.log
 
 # 编辑器/系统

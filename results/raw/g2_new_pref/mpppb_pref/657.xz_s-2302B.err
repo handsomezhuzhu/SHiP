@@ -1,0 +1,6 @@
+mpppb: fills=0 matched=0 unmatched=0 bypass=0 promote=0 keep=0 buckets(<-100,-100..-1,0..49,50..99,100..149,>=150)=0,0,0,0,0,0
+mpppb_ta: demand_bypass=0 pref_bypass=0 write_fills=0 trans_access=0 trans_hit=0 trans_fills=0
+mpppb_detail: demand_fills=0 pref_fills=0 trans_bypass=0 write_samp_hit=0 write_samp_miss=0 pref_samp_hit=0 pref_samp_miss=0 psel=0 wsel=0 pfsel=0 tsel=0
+mpppb: fills=400606 matched=400606 unmatched=0 bypass=231964 promote=1009607 keep=70630 buckets(<-100,-100..-1,0..49,50..99,100..149,>=150)=103447,201271,80559,5982,5528,3819
+mpppb_ta: demand_bypass=52920 pref_bypass=174615 write_fills=19063 trans_access=51303 trans_hit=42367 trans_fills=4507
+mpppb_detail: demand_fills=251543 pref_fills=125493 trans_bypass=4429 write_samp_hit=15517 write_samp_miss=59 pref_samp_hit=8768 pref_samp_miss=10172 psel=633 wsel=0 pfsel=0 tsel=0

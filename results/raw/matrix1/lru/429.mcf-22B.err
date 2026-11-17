@@ -1,0 +1,5 @@
+MISS set=1 way_idx=4 num_way=4
+MISS set=1 way_idx=12 num_way=12
+MISS set=0 way_idx=12 num_way=12
+MISS set=0 way_idx=8 num_way=8
+MISS set=0 way_idx=16 num_way=16
