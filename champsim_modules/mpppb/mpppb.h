@@ -118,7 +118,7 @@ private:
   bool author_ = false;        // MDPP + author training + author feature set
   bool author2_ = false;       // CRC2 config 2: single-core MDPP with prefetcher
   bool improve_ = false;       // TA-MPPPB: translation/access-aware reuse prediction & protection
-  // Granular Point 1 causal ablation & Point 2 TA-MPPPB v3 controls (off by default):
+  // Granular Point 1 causal ablation & Point 2 TA-MPPPB controls (off by default):
   bool ab_write_nopc_ = false;
   bool ab_write_nosamp_ = false;
   bool ab_write_preserve_ = false;

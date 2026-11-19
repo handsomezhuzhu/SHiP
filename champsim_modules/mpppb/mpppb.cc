@@ -168,7 +168,7 @@ mpppb::mpppb(CACHE* cache)
       plv_[2][0] = 44;
       plv_[2][1] = 15;
     } else if (std::strcmp(profile, "ta_mpppb") == 0 || std::strcmp(profile, "ta_mpppb_np") == 0) {
-      // TA-MPPPB v3: zero-extra-SRAM type-aware arbitration & zero-PC shielding.
+      // TA-MPPPB: zero-extra-SRAM type-aware arbitration & zero-PC shielding.
       const bool is_np = (std::strcmp(profile, "ta_mpppb_np") == 0);
       author_ = true;
       author2_ = !is_np;
