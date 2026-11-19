@@ -53,7 +53,7 @@
 │   ├── results_mdpp_author1.md  # 无预取器 author1 复现详报
 │   ├── results_mdpp_validate.md # 无预取器 8-trace c4/author1 验证报告
 │   ├── results_mdpp_pref.md     # 开启硬件预取器对照复现报告
-│   ├── results_ta_mpppb.md      # TA-MPPPB 原创改进与 v1/v2 消融报告
+│   ├── results_ta_mpppb.md      # TA-MPPPB 原创改进与早期迭代消融报告
 │   ├── review_mpppb_code.md     # 13 处复现 Bug 排查与对齐校验记录
 │   └── papers.md / decision.md / baselines.md / benchmark.md
 ├── results/                  # 各实验阶段汇总 CSV 与 raw JSON/log 归档

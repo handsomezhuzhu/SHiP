@@ -1,13 +1,13 @@
 # 跨 Benchmark 与跨预取器泛化实验报告（2×2 全矩阵：4 组共 224 次仿真）
 
-> 本文档汇报 **TA-MPPPB v3**（[`champsim_modules/mpppb/mpppb.cc`](../champsim_modules/mpppb/mpppb.cc)，`MPPPB_PROFILE=ta_mpppb`）在未参与调参的 **20 条新公开数据集轨迹** 与 **更复杂二层硬件预取器 `spp_dev`** 下的完整 2×2 泛化验证结果。
+> 本文档汇报 **TA-MPPPB**（[`champsim_modules/mpppb/mpppb.cc`](../champsim_modules/mpppb/mpppb.cc)，`MPPPB_PROFILE=ta_mpppb`）在未参与调参的 **20 条新公开数据集轨迹** 与 **更复杂二层硬件预取器 `spp_dev`** 下的完整 2×2 泛化验证结果。
 > 所有原始结果均归档于 `results/raw/`，可由 [`scripts/analyze_generalization.py`](../scripts/analyze_generalization.py) 一键校验并复现导出全部汇总表。
 
 ---
 
 ## 1. 实验设计：2×2 跨 Benchmark × 跨预取器对照矩阵
 
-为检验 TA-MPPPB v3 是否存在对原 8 条 SPEC2006 `4xx` 轨迹或 `ip_stride` 预取器的过拟合，本轮在既有基线组（**Group 0**）之上新增 **3 组云端全量实验（Group 1–3，共 192 次新增仿真，总计 224 次）**，每组均对 **`LRU`**、**`SHiP-PC`**、**原版 `MPPPB (author2)`** 与 **`TA-MPPPB v3`** 四种策略做同配置对照：
+为检验 TA-MPPPB 是否存在对原 8 条 SPEC2006 `4xx` 轨迹或 `ip_stride` 预取器的过拟合，本轮在既有基线组（**Group 0**）之上新增 **3 组云端全量实验（Group 1–3，共 192 次新增仿真，总计 224 次）**，每组均对 **`LRU`**、**`SHiP-PC`**、**原版 `MPPPB (author2)`** 与 **`TA-MPPPB`** 四种策略做同配置对照：
 
 | 组别 | Benchmark 集合 | 硬件预取器 (`L1D + L2C`) | 仿真窗口 (`warmup + sim`) | 运行次数 | 汇总表 |
 | --- | --- | --- | --- | ---: | --- |
@@ -35,7 +35,7 @@
 
 以下所有数字均由 [`results/generalization_summary.csv`](../results/generalization_summary.csv) 直接汇总（`Demand-MPKI` 定义为 `LOAD + RFO + PREFETCH + TRANSLATION` 缺失/千指令；`LR-MPKI` 定义为纯核需求 `LOAD + RFO` 缺失/千指令；`W/T/L` 按单条 IPC 相对变化 `>+0.5% / ±0.5% / <-0.5%` 统计）。
 
-| 组别 | 统计范围 (`n`) | `SHiP-PC` vs `LRU` | `MPPPB` vs `LRU` | **`TA-MPPPB v3` vs `LRU`** | **`TA` vs `SHiP`** | **`TA` vs `MPPPB`** | `Demand-MPKI` (`LRU → TA`) | `TRANSLATION` 命中率 (`LRU / SHiP / MPPPB → TA`) | `W/T/L` (`TA` vs `LRU` / `SHiP` / `MPPPB`) |
+| 组别 | 统计范围 (`n`) | `SHiP-PC` vs `LRU` | `MPPPB` vs `LRU` | **`TA-MPPPB` vs `LRU`** | **`TA` vs `SHiP`** | **`TA` vs `MPPPB`** | `Demand-MPKI` (`LRU → TA`) | `TRANSLATION` 命中率 (`LRU / SHiP / MPPPB → TA`) | `W/T/L` (`TA` vs `LRU` / `SHiP` / `MPPPB`) |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
 | **G0: 旧 8 + `ip_stride`** | 全量 (`8`) | +2.56% | +1.66% | **+3.33%** | **+0.75%** | **+1.64%** | 17.77 → 16.33 (**-8.09%**) | 12.78% / 21.50% / 27.12% → **51.28%** | `5/3/0` · `3/4/1` · `4/4/0` |
 | **G1: 旧 8 + `spp_dev`** | 全量 (`8`) | +0.26% | **-2.19%** | **+1.06%** | **+0.80%** | **+3.32%** | 33.25 → 32.08 (**-3.53%**) | 10.89% / 14.17% / **4.50%** → **29.02%** | `3/5/0` · `3/5/0` · `6/2/0` |
@@ -44,7 +44,7 @@
 
 若剔除 LLC 本身极不敏感的轨迹（过滤条件：`LRU` 总 LLC MPKI `AllMPKI >= 5` 时保留旧 5 条 / 新 15 条；核需求 `LR-MPKI >= 2` 时保留旧 4 条 / 新 11 条）：
 
-| 组别 | 访存敏感子集 (`n`) | `SHiP-PC` vs `LRU` | `MPPPB` vs `LRU` | **`TA-MPPPB v3` vs `LRU`** | **`TA` vs `SHiP`** | **`TA` vs `MPPPB`** | `LR-MPKI` 变化 (`LRU → TA`) |
+| 组别 | 访存敏感子集 (`n`) | `SHiP-PC` vs `LRU` | `MPPPB` vs `LRU` | **`TA-MPPPB` vs `LRU`** | **`TA` vs `SHiP`** | **`TA` vs `MPPPB`** | `LR-MPKI` 变化 (`LRU → TA`) |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | **G0** | `AllMPKI >= 5` (`5`) | +3.83% | +2.29% | **+5.04%** | +1.16% | +2.69% | 15.33 → 13.81 (-9.88%) |
 | **G1** | `AllMPKI >= 5` (`5`) | +0.43% | **-3.32%** | **+1.70%** | +1.26% | **+5.19%** | 13.42 → 13.21 (-1.55%) |
@@ -54,9 +54,9 @@
 | **G3** | `LR-MPKI >= 2` (`11`) | +2.49% | **-1.44%** | **+6.05%** | **+3.47%** | **+7.60%** | 16.92 → 12.62 (**-25.38%**) |
 
 ### 关键发现摘要
-1. **无过拟合且在新数据集上优势更大**：在完全未见过的 20 条新轨迹上（**Group 2**），`TA-MPPPB v3` 不仅未衰减，反而取得 **+6.97% Geomean IPC（vs `LRU`）**、**+2.15% vs `SHiP-PC`**、**+5.68% vs `MPPPB`**；在内存密集子集 `LR-MPKI >= 2`（11 条）上达到 **+12.39% vs `LRU`** 与 **-40.12% `LOAD+RFO` MPKI**。
+1. **无过拟合且在新数据集上优势更大**：在完全未见过的 20 条新轨迹上（**Group 2**），`TA-MPPPB` 不仅未衰减，反而取得 **+6.97% Geomean IPC（vs `LRU`）**、**+2.15% vs `SHiP-PC`**、**+5.68% vs `MPPPB`**；在内存密集子集 `LR-MPKI >= 2`（11 条）上达到 **+12.39% vs `LRU`** 与 **-40.12% `LOAD+RFO` MPKI**。
 2. **揭示原版 `MPPPB (author2)` 在复杂预取器 `spp_dev` 下的系统性坍塌**：在 **Group 1** 和 **Group 3** 中，`spp_dev` 使 LLC 预取请求量增大数倍（如新 20 条上从 `41.1M` 增至 `202.2M`）。原版 `MPPPB` 既激进旁路预取与页表翻译，又无法有效隔离写回，导致其 Geomean IPC **全面跌破 `LRU`（-2.19% 与 -1.08%）**，`TRANSLATION` 命中率惨跌至 **4.50%**（G1）和 **27.58%**（G3，均低于 `LRU`）。
-3. **`TA-MPPPB v3` 成功扛住 `spp_dev` 冲击**：在 **Group 1** 与 **Group 3** 中分别保持 **+1.06% / +3.15% vs `LRU`**、**+0.80% / +1.84% vs `SHiP-PC`**、**+3.32% / +4.28% vs `MPPPB`**，证明 `TA-MPPPB v3` 的双仲裁与页表保护机制具有跨预取器鲁棒性。
+3. **`TA-MPPPB` 成功扛住 `spp_dev` 冲击**：在 **Group 1** 与 **Group 3** 中分别保持 **+1.06% / +3.15% vs `LRU`**、**+0.80% / +1.84% vs `SHiP-PC`**、**+3.32% / +4.28% vs `MPPPB`**，证明 `TA-MPPPB` 的双仲裁与页表保护机制具有跨预取器鲁棒性。
 
 ---
 
@@ -102,7 +102,7 @@
 
 **诚实记录的负向/边界案例（vs `LRU` 或 vs `SHiP` 落后超过 0.5%）**：
 - `607.cactuBSSN_s-2421B`：G2 `TA` vs `LRU` 为 **-1.40%**、G3 为 **-1.28%**；但原版 `MPPPB` 在 G2 上暴跌 **-16.67%**（`SHiP` 也倒退 **-3.03%**），`TA` 相比 `MPPPB` 已大幅修复 **+18.32%（G2）/ +3.09%（G3）** 并优于 `SHiP`。
-- `649.fotonik3d_s-1176B`（仅 G3）：**TA vs LRU -1.58%（vs SHiP -0.68%，vs MPPPB -1.11%）**。该轨迹在 `spp_dev` 下 `LR-MPKI` 极低（仅 **0.20**），而 `Demand-MPKI` 高达 **71.92**（几乎全由预取和极高流式替换驱动）。由于 `TA-MPPPB v3` 的 `pfsel`/`wsel` 仅由 demand miss 加权监督（`ab_duel_dem_w_=1, ab_duel_own_w_=0`），在极低需求缺失率场景下 `pfsel=-59` 轻微偏冷，未能保留有用的 `spp_dev` 预取。
+- `649.fotonik3d_s-1176B`（仅 G3）：**TA vs LRU -1.58%（vs SHiP -0.68%，vs MPPPB -1.11%）**。该轨迹在 `spp_dev` 下 `LR-MPKI` 极低（仅 **0.20**），而 `Demand-MPKI` 高达 **71.92**（几乎全由预取和极高流式替换驱动）。由于 `TA-MPPPB` 的 `pfsel`/`wsel` 仅由 demand miss 加权监督（`ab_duel_dem_w_=1, ab_duel_own_w_=0`），在极低需求缺失率场景下 `pfsel=-59` 轻微偏冷，未能保留有用的 `spp_dev` 预取。
 - `bfs.twitter-10B`：G2 下 `TA` vs `LRU` 为 `+0.70%` 但落后 `SHiP`（`-1.65%`）；G3 下不规则图遍历导致三者均不如 `LRU`（`SHiP -0.88%`、`MPPPB -4.24%`、`TA -2.08%`，`TA` 仍胜 `MPPPB` `+2.25%`）。
 - `657.xz_s-2302B`（G3）：`TA` 优于 `LRU`（**+1.25%**）与 `MPPPB`（**+0.31%**），小幅低于 `SHiP`（`-0.57%`）；`cvp1_srv_40`（G2）：`+0.45%` vs `LRU`，`-0.99%` vs `SHiP`（G3 上已反超 `SHiP` `+0.40%`）。
 
@@ -126,10 +126,10 @@
 
 从统计数据可直接看出三条物理机制闭环：
 1. **原版 `MPPPB (author2)` 的“瞎旁路 + 写回挤占”悖论**：在未调过的新 20 条 `ip_stride` 上，原版盲目旁路了 **3,835 万次 `PREFETCH` 与 93.6 万次 `TRANSLATION`**（总旁路占比高达 80%）；切至 `spp_dev` 后，一方面旁路了 **48.3 万 / 135.4 万次关键页表 `TRANSLATION`**，另一方面 `WRITE` 缺失率反而保持在低位（7.55% / 6.31%），即**把无用的 L2 脏写回留在了 LLC，却把页表游走和有效预取踢出了 LLC**。
-2. **`TA-MPPPB v3` 的对称双 Set-Dueling 在未见过负载上精确分化工作**：以 [`mpppb.cc`](../champsim_modules/mpppb/mpppb.cc#L830-L843) `pos = (sel >= 0) ? 8 : 15`（`pos=8` 中位保留，`pos=15` LRU 尾冷插入）：
+2. **`TA-MPPPB` 的对称双 Set-Dueling 在未见过负载上精确分化工作**：以 [`mpppb.cc`](../champsim_modules/mpppb/mpppb.cc#L830-L843) `pos = (sel >= 0) ? 8 : 15`（`pos=8` 中位保留，`pos=15` LRU 尾冷插入）：
    - 对写重用流（如 `429.mcf-22B` `wsel=+440`、`620.omnetpp_s` `wsel=+483/+367`、`sssp.web` `wsel=+293/+300`），`wsel > 0` 自动切换为 `pos=8` 保留写回；对流式脏写回主导负载（如 `470.lbm` `wsel=-365`、`605.mcf_s` `wsel=-512/-488`、`623.xalancbmk_s` `wsel=-496/-499`），`wsel < 0` 自动切至 `pos=15`，使整体 `WRITE` 写回让位给高价值需求与翻译块（`WRITE` 缺失率 45.38%–66.68%）。
    - 对硬件预取流，高噪负载（如 `605.mcf_s`、`620.omnetpp_s`、`623.xalancbmk_s`、`483.xalancbmk`、`sssp.web`）下 `pfsel` 迅速饱和至 `-312 ~ -512` 选择 `pos=15` 快速汰换，同时因 **`pref_bypass = 0`** 避免了短距预取被直接旁路，反而将整体 **`PREFETCH` LLC 命中率推高至所有策略第一（G1 41.87% / G2 19.89% / G3 51.64%）**；而预取确实有用时（如 `429.mcf` `+370`、`607.cactuBSSN_s` `+506/+507`），`pfsel > 0` 自动切换至 `pos=8`。
-3. **MMU 页表翻译全量护航**：在全部 3 组新增 192 次实验中 `TA-MPPPB v3` 保持 `trans_bypass = 0`，将 `TRANSLATION` 命中率相对原版 `MPPPB` 提升 **+24.5 ~ +33.9 个百分点**（尤其 `623.xalancbmk_s` 由 `3.7%/29.5% → 92.7%`、`483.xalancbmk` 由 `3.4% → 48.7%`）。
+3. **MMU 页表翻译全量护航**：在全部 3 组新增 192 次实验中 `TA-MPPPB` 保持 `trans_bypass = 0`，将 `TRANSLATION` 命中率相对原版 `MPPPB` 提升 **+24.5 ~ +33.9 个百分点**（尤其 `623.xalancbmk_s` 由 `3.7%/29.5% → 92.7%`、`483.xalancbmk` 由 `3.4% → 48.7%`）。
 
 ---
 
