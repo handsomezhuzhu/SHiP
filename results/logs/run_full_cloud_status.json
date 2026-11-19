@@ -1,0 +1,63 @@
+{
+  "elapsed_sec": 19907.4,
+  "total_pulled": 218,
+  "total_jobs": 354,
+  "failed_jobs": [],
+  "nodes": {
+    "full-ib5": {
+      "state": "RUNNING",
+      "ok": 19,
+      "fail": 0,
+      "procs": 4,
+      "pulled": 19,
+      "total": 37
+    },
+    "full-dt2": {
+      "state": "DONE",
+      "pulled": 56,
+      "total": 56
+    },
+    "full-ib1": {
+      "state": "RUNNING",
+      "ok": 8,
+      "fail": 0,
+      "procs": 4,
+      "pulled": 8,
+      "total": 37
+    },
+    "full-dt1": {
+      "state": "DONE",
+      "pulled": 37,
+      "total": 37
+    },
+    "full-dt3": {
+      "state": "DONE",
+      "pulled": 37,
+      "total": 37
+    },
+    "full-ib2": {
+      "state": "RUNNING",
+      "ok": 23,
+      "fail": 0,
+      "procs": 4,
+      "pulled": 23,
+      "total": 48
+    },
+    "full-ib4": {
+      "state": "RUNNING",
+      "ok": 19,
+      "fail": 0,
+      "procs": 4,
+      "pulled": 19,
+      "total": 51
+    },
+    "full-ib3": {
+      "state": "RUNNING",
+      "ok": 19,
+      "fail": 0,
+      "procs": 4,
+      "pulled": 19,
+      "total": 51
+    }
+  }
+}

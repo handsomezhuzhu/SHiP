@@ -1,0 +1,49 @@
+{
+  "elapsed_min": 143.7,
+  "completed_new_jobs": 354,
+  "total_new_jobs": 354,
+  "remaining": 0,
+  "nodes": {
+    "full-ib1": {
+      "state": "DONE",
+      "pulled": 4,
+      "total": 4
+    },
+    "full-ib2": {
+      "state": "DONE",
+      "pulled": 4,
+      "total": 4
+    },
+    "full-ib3": {
+      "state": "DONE",
+      "pulled": 4,
+      "total": 4
+    },
+    "full-ib4": {
+      "state": "DONE",
+      "pulled": 4,
+      "total": 4
+    },
+    "full-ib5": {
+      "state": "DONE",
+      "pulled": 4,
+      "total": 4
+    },
+    "full-dt1": {
+      "state": "DONE",
+      "pulled": 44,
+      "total": 44
+    },
+    "full-dt2": {
+      "state": "DONE",
+      "pulled": 43,
+      "total": 43
+    },
+    "full-dt3": {
+      "state": "DONE",
+      "procs": 0,
+      "pulled": 29,
+      "total": 29
+    }
+  }
+}
