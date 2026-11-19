@@ -21,6 +21,20 @@ papers/pdf/
 # 运行产生的原始输出（实验数据随仓库入库，仅忽略顶层临时日志）
 results/*.log
 
+# 论文（paper/）：LaTeX 源码、配图与最终 main.pdf 入库，
+# 仅忽略编译中间产物与期刊模板附带的示例 PDF（体积大且非论文本体）
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+paper/Template.pdf
+paper/CJC1.pdf
+paper/计算机学报__Debug模板.pdf
+基于计算机学报latex的大作业模板.zip
+
 # 编辑器/系统
 .DS_Store
 *.swp
