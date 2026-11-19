@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="flow-test" name="复现与改进">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t1" value="&lt;b&gt;阶段一：论文复现&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="240" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="MPPPB / ChampSim 基线环境&lt;br&gt;（Trace、LLC 配置、编译链）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="运行 LRU / SHiP / MPPPB&lt;br&gt;50M warmup + 150M sim" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="8 条 SPEC06 Trace&lt;br&gt;（无预取 / 开预取两套）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="结果校验与几何平均对比&lt;br&gt;（IPC / MPKI）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="390" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" value="复现结论：原版 MPPPB&lt;br&gt;优于 SHiP / LRU" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" value="&lt;b&gt;阶段二：机理分析与改进&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="20" width="280" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="b1" value="启用硬件预取后&lt;br&gt;MPPPB 性能反而下降？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;" vertex="1" parent="1">
+          <mxGeometry x="380" y="50" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="b2" value="逐请求类型日志解剖&lt;br&gt;定位 ip == 0 流量" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="360" y="190" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b3" value="TRANSLATION / WRITE / PREFETCH" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="360" y="290" width="240" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="b4" value="单变量消融归因&lt;br&gt;验证各项病灶贡献" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="360" y="370" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b5" value="TA-MPPPB 改进设计&lt;br&gt;Zero-PC 屏蔽 / 页表保护 / 双决斗" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="470" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c1" value="TA-MPPPB 是否超越&lt;br&gt;原版与 SHiP？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="650" y="330" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="跨负载泛化验证&lt;br&gt;（SPEC17 / GAP / 其他预取器）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="630" y="470" width="240" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="输出论文、实验报告与可复现脚本" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="630" y="590" width="240" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="a1" target="a2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="a2" target="a3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="a3" target="a4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="a4" target="a5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="开启 ip_stride / spp_dev 预取" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;fontSize=10;" edge="1" parent="1" source="a5" target="b1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="b1" target="b2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="b2" target="b3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="b3" target="b4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="b4" target="b5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="b5" target="c1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="c1" target="c2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="否：回溯调整机制" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeColor=#B85450;fontColor=#B85450;fontSize=10;" edge="1" parent="1" source="c1" target="b4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="c2" target="c3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
